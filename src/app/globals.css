@@ -73,7 +73,9 @@ body {
   color: var(--text-primary);
   background: var(--bg-page);
   line-height: 1.6;
-  letter-spacing: -0.03em;
+  /* design.md는 전역 -0.03em이지만 긴 설명문·영문에서는 글자가 붙어 보여 본문은 약하게 두고,
+     제목(h1~h3)과 모듈의 큰 글자에만 -0.03em 이하를 준다. */
+  letter-spacing: -0.01em;
   word-break: keep-all;
   overflow-wrap: anywhere;
   -webkit-font-smoothing: antialiased;
@@ -97,14 +99,14 @@ img, svg { max-width: 100%; }
 .site-main {
   flex: 1;
   width: 100%;
-  max-width: 1380px;
+  /* 하위 화면은 1180px로 좁혀 읽기 폭을 맞춘다. 허브(/)는 hub.module.css에서 1380px로 넓힌다. */
+  max-width: 1180px;
   margin-inline: auto;
   padding: 40px var(--shell-pad) 56px;
 }
 @media (min-width: 640px) {
   .site-main { padding-block: 56px 80px; }
 }
-.site-main > p, .site-main > section > p { max-width: 920px; }
 
 h1, h2, h3 { color: var(--text-primary); }
 h1 {
@@ -121,7 +123,7 @@ h2 {
   letter-spacing: -0.035em;
   margin: 40px 0 12px;
 }
-h3 { font-size: 17px; font-weight: 800; line-height: 1.5; margin: 24px 0 8px; }
+h3 { font-size: 17px; font-weight: 800; line-height: 1.5; letter-spacing: -0.03em; margin: 24px 0 8px; }
 @media (min-width: 640px) {
   h1 { font-size: 36px; }
   h2 { font-size: 24px; }
@@ -194,16 +196,17 @@ button[type="submit"]:hover, .button.primary:hover { background: #5a37d6; border
 button:disabled, button[aria-disabled="true"] { opacity: 0.5; cursor: not-allowed; }
 
 /* ---------- 필터 칩 ---------- */
-.filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.filter { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 20px; }
+.filter + .filter { margin-top: -12px; }
 .filter a {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 6px 14px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--border);
   background: var(--bg-card);
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
   transition: background 0.18s, color 0.18s, border-color 0.18s;
@@ -224,9 +227,13 @@ button:disabled, button[aria-disabled="true"] { opacity: 0.5; cursor: not-allowe
   border: 1px solid var(--border);
   border-radius: var(--radius-panel);
 }
-.list > li { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.list > li { padding: 20px 0; border-bottom: 1px solid var(--border); }
 .list > li:last-child { border-bottom: 0; }
-.list > li > div:first-child { font-weight: 700; }
+.list > li > div:first-child { font-weight: 800; letter-spacing: -0.02em; }
+/* 제목 → 설명 → 메타(배지) 사이에 숨 쉴 간격을 둔다 */
+.list > li > :not(:first-child) { margin-top: 6px; }
+.list > li > div:not(:first-child):not(.muted) { color: var(--text-secondary); font-size: 15px; line-height: 1.75; }
+.list > li > .muted:not(:first-child) { margin-top: 10px; line-height: 1.9; }
 .list > li > div:first-child > a, .list > li strong a { color: var(--text-primary); text-decoration: none; }
 .list > li > div:first-child > a:hover, .list > li strong a:hover { color: var(--menu-notice); }
 .list .list { border: 0; padding: 0 0 0 12px; margin: 8px 0 0; background: transparent; border-left: 2px solid var(--border); border-radius: 0; }
@@ -261,6 +268,25 @@ form.stack {
   margin-bottom: 16px;
 }
 form.stack form.stack, td form.stack, li form.stack { padding: 0; border: 0; background: transparent; }
+/* 검색 폼은 카드로 감싸지 않고 [입력창][검색] 한 줄로 둔다. "검색" 라벨은 화면 낭독기에만 읽힌다. */
+form.stack[role="search"] {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px 10px;
+  max-width: 640px;
+  margin: 20px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+form.stack[role="search"] > .field { flex: 1 1 auto; min-width: 0; }
+form.stack[role="search"] > .field > span {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+form.stack[role="search"] > div { display: flex; flex: none; align-items: center; gap: 12px; font-size: 14px; white-space: nowrap; }
+form.stack[role="search"] button { min-height: 46px; padding-inline: 22px; }
 @media (min-width: 640px) {
   form.stack { padding: 28px 32px; }
 }

@@ -240,14 +240,14 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
                     {f.originalName} · {formatBytes(f.size)} · 다운로드 {f.downloads.toLocaleString("ko-KR")}회 ·{" "}
                     {f.authorName}
                   </span>
-                  <span className={styles.boardAction}>
-                    <a href={`/api/files/${f.id}/download`} className="button">
-                      다운로드
-                    </a>
-                    {(f.ext === "exe" || f.ext === "apk") && (
-                      <span className="muted">실행 파일입니다. 올린 교사와 출처를 확인한 뒤 실행하십시오.</span>
-                    )}
-                  </span>
+                  <a href={`/api/files/${f.id}/download`} className={`button ${styles.boardDownload}`}>
+                    다운로드
+                  </a>
+                  {(f.ext === "exe" || f.ext === "apk") && (
+                    <span className={`muted ${styles.boardNote}`}>
+                      실행 파일입니다. 올린 교사와 출처를 확인한 뒤 실행하십시오.
+                    </span>
+                  )}
                 </li>
               ))}
             </ul>

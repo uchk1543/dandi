@@ -27,7 +27,7 @@
     linear-gradient(90deg, var(--bg-hero) 0%, #dcf3ff 55%, #eae6ff 100%);
 }
 /* 히어로가 헤더 바로 아래에 붙도록 본문 위 여백을 없앤다 */
-:global(.site-main):has(> .hero) { padding-top: 0; }
+:global(.site-main):has(> .hero) { max-width: 1380px; padding-top: 0; }
 .heroInner { position: relative; height: 100%; display: flex; align-items: center; }
 .heroText { position: relative; z-index: 2; padding-block: 40px; }
 .heroEyebrow {
@@ -275,9 +275,10 @@
 }
 .boardRow :global(.badge) { margin: 0; justify-self: start; }
 .boardRow .boardMeta :global(.badge) { margin-right: 6px; }
-.boardDate { justify-self: end; font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+.boardDate { grid-column: 2; grid-row: 1; justify-self: end; font-size: 13px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
 .boardTitle {
   grid-column: 1 / -1;
+  grid-row: 2;
   min-width: 0;
   font-size: 15px;
   font-weight: 700;
@@ -289,14 +290,16 @@
 }
 a.board-title:hover { color: var(--menu-notice); }
 .boardMeta { grid-column: 1 / -1; font-size: 13px; font-weight: 600; color: var(--text-muted); }
-.boardAction { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.boardAction :global(.button) { min-height: 34px; padding: 6px 14px; font-size: 13px; }
+/* 다운로드 버튼: 모바일은 메타 아래 왼쪽, ≥640은 날짜 아래 오른쪽 열 */
+.boardDownload.boardDownload { grid-column: 1 / -1; justify-self: start; min-height: 30px; padding: 4px 12px; font-size: 12px; }
+.boardNote { grid-column: 1 / -1; font-size: 13px; }
 .boardEmpty { margin: 20px 0 0; }
 @media (min-width: 640px) {
   .boardList { grid-template-columns: auto minmax(0, 1fr) auto; column-gap: 16px; }
   .boardRow { row-gap: 4px; }
   .boardTitle { grid-column: 2; grid-row: 1; }
   .boardDate { grid-column: 3; grid-row: 1; }
-  .boardMeta { grid-column: 2 / -1; }
-  .boardAction { grid-column: 2 / -1; }
+  .boardMeta { grid-column: 2; grid-row: 2; }
+  .boardDownload.boardDownload { grid-column: 3; grid-row: 2; justify-self: end; }
+  .boardNote { grid-column: 2 / -1; }
 }
