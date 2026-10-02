@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { appCategoryLabel, levelLabel } from "@/lib/constants";
 import type { MiniApp } from "@/lib/types";
+import { AppThumbArt } from "./illustrations";
+import { levelTone } from "./level-tone";
+import styles from "./app-card.module.css";
 
 // 미니앱 카드(F-05 바로 실행, F-06 개인정보 표시). 허브(/)와 미니앱 목록(/apps)이 함께 사용한다.
 
@@ -20,12 +23,12 @@ export function AppPrivacyBadges({ app }: { app: MiniApp }) {
       {app.handlesPersonalData ? (
         <span className="badge warn">학생 개인정보 처리</span>
       ) : (
-        <span className="badge">학생 개인정보 없음</span>
+        <span className="badge ok">학생 개인정보 없음</span>
       )}
       {app.privacyCheck?.externalTransfer && <span className="badge warn">외부 전송 있음</span>}
       {app.approvalStatus === "pending" && <span className="badge warn">승인 대기</span>}
       {app.approvalStatus === "approved" && (
-        <span className="badge">내부 승인 완료{approvedAt ? ` ${approvedAt}` : ""}</span>
+        <span className="badge ok">내부 승인 완료{approvedAt ? ` ${approvedAt}` : ""}</span>
       )}
     </>
   );
@@ -36,7 +39,7 @@ export function AppMetaBadges({ app }: { app: MiniApp }) {
     <>
       <span className="badge">{appCategoryLabel(app.category)}</span>
       {app.schoolLevels.map((l) => (
-        <span key={l} className="badge">
+        <span key={l} className={`badge tint ${levelTone(l)}`}>
           {levelLabel(l)}
         </span>
       ))}
@@ -44,24 +47,52 @@ export function AppMetaBadges({ app }: { app: MiniApp }) {
   );
 }
 
-export function AppCard({ app }: { app: MiniApp }) {
+/** 미니앱 카드 그리드: 1 → 2(≥640) → 3(≥1024)열 */
+export function AppCardGrid({ apps }: { apps: MiniApp[] }) {
   return (
-    <li>
-      <div>
-        <strong>
-          <Link href={`/apps/${app.id}`}>{app.title}</Link>
-        </strong>{" "}
-        <AppMetaBadges app={app} />
+    <ul className={styles.cardGrid}>
+      {apps.map((app) => (
+        <AppCard key={app.id} app={app} />
+      ))}
+    </ul>
+  );
+}
+
+/** 콘텐츠 카드(design.md 7.7): 썸네일 8:5 → 학교급 배지·분류 → 제목 → 설명 2줄 → 개인정보 배지 → 하단 행. */
+export function AppCard({ app }: { app: MiniApp }) {
+  const tone = levelTone(app.schoolLevels[0]);
+  const href = `/apps/${app.id}`;
+  return (
+    <li className={`${styles.appCard} ${tone}`}>
+      <Link href={href} className={styles.appThumb} tabIndex={-1} aria-hidden="true">
+        <AppThumbArt category={app.category} className={styles.appThumbArt} />
+        <span className={styles.appThumbTitle}>{app.title}</span>
+      </Link>
+      <div className={styles.appBody}>
+        <div className={styles.appTags}>
+          {app.schoolLevels.map((l) => (
+            <span key={l} className={`badge tint ${levelTone(l)}`}>
+              {levelLabel(l)}
+            </span>
+          ))}
+          <span className={styles.appCat}>{appCategoryLabel(app.category)}</span>
+        </div>
+        <h3 className={styles.appTitle}>
+          <Link href={href}>{app.title}</Link>
+        </h3>
+        {app.description && <p className={styles.appDesc}>{app.description}</p>}
+        <div className={styles.appPrivacy}>
+          <AppPrivacyBadges app={app} />
+        </div>
+        <div className={styles.appFoot}>
+          <span className={styles.appMeta}>
+            실행 {app.runs.toLocaleString("ko-KR")}회 · {app.authorName}
+          </span>
+          <Link href={href} className={styles.pillBtn} aria-label={`${app.title} 바로 실행`}>
+            바로 실행
+          </Link>
+        </div>
       </div>
-      {app.description && <p style={{ margin: "4px 0" }}>{app.description}</p>}
-      <div className="muted">
-        <AppPrivacyBadges app={app} /> 실행 {app.runs.toLocaleString("ko-KR")}회 · {app.authorName}
-      </div>
-      <p style={{ margin: "6px 0 0" }}>
-        <Link href={`/apps/${app.id}`} className="button primary">
-          바로 실행
-        </Link>
-      </p>
     </li>
   );
 }

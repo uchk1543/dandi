@@ -1,0 +1,160 @@
+/* 헤더(design.md 7.1). layout.tsx와 site-nav.tsx가 함께 쓴다. */
+
+/* ---------- 헤더 (7.1) ---------- */
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.headerInner {
+  width: min(100% - 32px, 1380px);
+  height: var(--header-h);
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+@media (min-width: 992px) {
+  .headerInner { width: min(100% - 48px, 1380px); }
+}
+.logo {
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  color: var(--text-primary);
+  text-decoration: none;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.logo:hover { color: var(--text-primary); }
+.logoMark { width: 28px; height: 28px; flex: none; }
+.logo .logoAccent { color: var(--brand); }
+.logoTag {
+  font-size: 11px; font-weight: 800; letter-spacing: 0; color: var(--brand);
+  background: var(--brand-tint); border-radius: var(--radius-pill); padding: 3px 8px;
+}
+@media (min-width: 992px) {
+  .logo { font-size: 27px; }
+}
+
+.gnb { display: none; height: 100%; }
+.gnb a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding-inline: clamp(10px, 1.15vw, 22px);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.18s;
+}
+.gnb a::after {
+  content: "";
+  position: absolute;
+  left: clamp(10px, 1.15vw, 22px);
+  right: clamp(10px, 1.15vw, 22px);
+  bottom: 0;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--accent, var(--brand));
+  opacity: 0;
+  transition: opacity 0.18s;
+}
+.gnb a:hover, .gnb a[aria-current="page"] { color: var(--accent, var(--brand)); }
+.gnb a:hover::after, .gnb a[aria-current="page"]::after { opacity: 1; }
+
+.headerActions { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.headerActions .headerCta { display: none; }
+.session {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+}
+.sessionWho {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.session a {
+  flex: none;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  text-decoration: none;
+  background: var(--bg-card);
+}
+.session a:hover { background: var(--bg-subtle); color: var(--text-primary); }
+/* 좁은 화면에서는 이름을 시각적으로만 숨긴다(스크린 리더·E2E는 계속 읽는다) */
+@media (max-width: 639px), (min-width: 992px) and (max-width: 1199px) {
+  .sessionWho {
+    position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+}
+@media (max-width: 991px) {
+  .sessionExtra { display: none; }
+}
+@media (min-width: 992px) and (max-width: 1199px) {
+  .headerActions .headerCta { display: none; }
+}
+
+@media (min-width: 992px) {
+  .gnb { display: flex; }
+  .headerActions .headerCta { display: inline-flex; }
+  .mnav { display: none; }
+}
+
+/* 모바일 메뉴(≤991): 햄버거 42×42 */
+.mnavToggle {
+  width: 42px;
+  height: 42px;
+  border-radius: 9px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--text-primary);
+  display: grid;
+  place-items: center;
+}
+.mnavToggle:hover { background: var(--bg-subtle); }
+.mnavToggle svg { width: 24px; height: 24px; }
+.mnavPanel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 16px 32px rgba(23, 26, 28, 0.08);
+  padding: 12px var(--shell-pad) 20px;
+  max-height: calc(100vh - var(--header-h));
+  overflow-y: auto;
+}
+.mnavPanel ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
+.mnavPanel a {
+  display: block;
+  padding: 12px 8px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-radius: 10px;
+}
+.mnavPanel a:hover, .mnavPanel a[aria-current="page"] { background: var(--bg-subtle); color: var(--accent, var(--brand)); }
+.mnavPanel .mnavCta { margin-top: 12px; width: 100%; justify-content: center; }

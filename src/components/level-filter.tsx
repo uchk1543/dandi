@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SCHOOL_LEVELS } from "@/lib/constants";
+import { levelTone } from "./level-tone";
 
 // 학교급 필터 링크(F-07, 교사단 논의 P8). 서버 컴포넌트에서 ?level= 쿼리로 동작한다.
 export function LevelFilter({
@@ -24,7 +25,7 @@ export function LevelFilter({
         전체
       </Link>
       {SCHOOL_LEVELS.map((l) => (
-        <Link key={l.id} href={href(l.id)} aria-current={current === l.id ? "page" : undefined}>
+        <Link key={l.id} href={href(l.id)} className={levelTone(l.id)} aria-current={current === l.id ? "page" : undefined}>
           {l.label}
         </Link>
       ))}

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppCard } from "@/components/app-card";
+import { AppCardGrid } from "@/components/app-card";
 import { LevelFilter } from "@/components/level-filter";
 import { listApps } from "@/lib/apps";
 import { APP_CATEGORIES, isAppCategory, isSchoolLevel } from "@/lib/constants";
@@ -56,11 +56,7 @@ export default async function AppsPage({ searchParams }: { searchParams: Promise
       {apps.length === 0 ? (
         <p className="muted">조건에 맞는 미니앱이 없습니다.</p>
       ) : (
-        <ul className="list">
-          {apps.map((app) => (
-            <AppCard key={app.id} app={app} />
-          ))}
-        </ul>
+        <AppCardGrid apps={apps} />
       )}
     </>
   );

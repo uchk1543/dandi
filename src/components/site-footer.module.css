@@ -1,0 +1,25 @@
+/* 푸터(design.md 7.9). */
+
+/* ---------- 푸터 (7.9) ---------- */
+.siteFooter { background: var(--bg-footer); color: rgba(255, 255, 255, 0.7); }
+.footerInner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  max-width: 1380px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+@media (min-width: 640px) { .footerInner { padding-inline: 32px; } }
+@media (min-width: 1024px) {
+  .footerInner { grid-template-columns: minmax(0, 1fr) auto; gap: 40px; padding-block: 48px; }
+}
+.footerLogo { font-size: 22px; font-weight: 900; letter-spacing: -0.055em; color: #fff; }
+.footerLogo .logoAccent { color: #a996ff; }
+.footerInfo { margin: 28px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 14px; font-weight: 500; line-height: 24px; }
+.footerInfo code { background: #242424; color: #fff; }
+.footerCopy { margin: 28px 0 0; font-size: 13px; font-weight: 500; line-height: 20px; color: rgba(255, 255, 255, 0.55); }
+.footerLinks { display: flex; flex-wrap: wrap; gap: 12px 20px; align-content: start; }
+@media (min-width: 1024px) { .footerLinks { max-width: 360px; justify-content: flex-end; } }
+.footerLinks a { font-size: 14px; font-weight: 600; color: rgba(255, 255, 255, 0.7); text-decoration: none; }
+.footerLinks a:hover { color: #fff; }

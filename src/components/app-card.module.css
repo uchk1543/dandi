@@ -1,0 +1,86 @@
+/* 미니앱 카드와 카드 그리드(design.md 7.7). 허브(/)와 /apps가 함께 쓴다. */
+
+/* ---------- 콘텐츠(미니앱) 카드 (7.7) ---------- */
+.cardGrid { list-style: none; margin: 32px 0 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 24px; }
+@media (min-width: 640px) { .cardGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .cardGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.appCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.appCard:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.appThumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+  background: var(--lv-bg, var(--bg-subtle));
+}
+.appThumbArt { position: absolute; inset: 0; width: 100%; height: 100%; transition: transform 0.4s; }
+.appCard:hover .appThumbArt { transform: scale(1.04); }
+.appThumbTitle {
+  position: absolute;
+  left: 20px;
+  right: 20px;
+  bottom: 18px;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.3;
+  letter-spacing: -0.045em;
+  color: var(--text-strong);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.appBody { flex: 1; display: flex; flex-direction: column; padding: 20px; }
+.appTags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.appTags :global(.badge) { margin: 0; }
+.appCat { margin-left: 4px; font-size: 13px; font-weight: 700; color: var(--text-tertiary); }
+.appTitle { margin: 12px 0 0; font-size: 18px; font-weight: 800; line-height: 28px; }
+.appTitle a { color: var(--text-primary); text-decoration: none; }
+.appTitle a:hover { color: var(--menu-notice); }
+.appDesc {
+  margin: 8px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 24px;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.appPrivacy { margin-top: 12px; }
+.appFoot {
+  margin-top: auto;
+  padding-top: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.appMeta { font-size: 14px; font-weight: 700; color: var(--text-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+
+/* 학교급 색 알약 버튼(콘텐츠 카드 "실행하기") */
+.pillBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--lv, var(--brand));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.pillBtn:hover { color: #fff; filter: brightness(0.94); }
