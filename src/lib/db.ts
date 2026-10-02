@@ -8,9 +8,13 @@ import type { DB } from "./types";
 // 프로토타입용 로컬 JSON 저장소. v1.0에서 Supabase(PostgreSQL)로 교체한다.
 // 교체 시에는 readDb/mutate를 사용하는 lib/*.ts 도메인 함수만 바꾸면 된다.
 
+// Vercel 서버는 /tmp만 쓸 수 있으므로(VERCEL=1은 Vercel이 자동 설정) 기본 위치를 /tmp로 바꾼다.
+// /tmp는 인스턴스마다 따로이고 재시작하면 지워지므로, Vercel 배포는 화면 확인용으로만 쓴다.
 export const DATA_DIR = process.env.DANDI_DATA_DIR
   ? path.resolve(process.env.DANDI_DATA_DIR)
-  : path.join(process.cwd(), "data");
+  : process.env.VERCEL
+    ? "/tmp/dandi"
+    : path.join(process.cwd(), "data");
 export const UPLOAD_DIR = path.join(DATA_DIR, "uploads");
 /** 사이트·스킬 파일 본문(내용 주소 저장: data/blobs/<sha256>) */
 export const BLOB_DIR = path.join(DATA_DIR, "blobs");
