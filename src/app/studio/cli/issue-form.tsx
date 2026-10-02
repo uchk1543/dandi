@@ -1,34 +1,14 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
+import { CodeBlock } from "@/components/copy-button";
 import { issueTokenAction, type IssueState } from "./actions";
-
-function CopyButton({ text }: { text: string }) {
-  const [done, setDone] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(text);
-          setDone(true);
-        } catch {
-          setDone(false);
-        }
-      }}
-    >
-      {done ? "복사했습니다" : "복사"}
-    </button>
-  );
-}
 
 function CommandBlock({ label, command }: { label: string; command: string }) {
   return (
     <div>
-      <p>
-        {label} <CopyButton text={command} />
-      </p>
-      <pre>{command}</pre>
+      <p>{label}</p>
+      <CodeBlock text={command} label={`${label} 복사`} />
     </div>
   );
 }

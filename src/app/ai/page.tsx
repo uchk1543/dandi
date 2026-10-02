@@ -5,6 +5,7 @@ import { keyRoleLabel, listMyProjectsWithKeys, TEACHER_MONTHLY_CAP } from "@/lib
 import { getCurrentUser, isTeacher } from "@/lib/session";
 import type { AiModel } from "@/lib/types";
 import { GatewayTestForm, type ModelOption, type TestProject } from "./gateway-test";
+import { CodeBlock } from "@/components/copy-button";
 
 // [AI 사용] 화면: 모델 가이드(F-22) · 프로젝트 키로 게이트웨이 테스트(F-21, F-32) · API 호출 예시 ·
 // 미니앱 서버 프록시 예시(F-35). 키 발급·예산·허용 모델은 프로젝트 화면(/studio/projects)에서 관리한다.
@@ -188,9 +189,9 @@ export default async function AiPage() {
         <code>{`{"model":"${exampleModel}","messages":[{"role":"user","content":"..."}]}`}</code> 본문도 받습니다.
       </p>
       <p className="muted">macOS·Linux·Git Bash</p>
-      <pre>{curl}</pre>
+      <CodeBlock text={curl} />
       <p className="muted">Windows PowerShell</p>
-      <pre>{powershell}</pre>
+      <CodeBlock text={powershell} />
       <p className="muted">
         성공하면 <code>{"{ model, output, projectId, usage: { tokens, remaining, quota, teacherRemaining, teacherCap }, warnings, piiMasked, mock }"}</code>
         을 돌려줍니다. 오류는 <code>{"{ error: { code, message, hint } }"}</code> 형식입니다.
@@ -262,8 +263,8 @@ export default async function AiPage() {
         <code>DANDI_HUB_URL</code>(<code>{origin}</code>)을 넣습니다. 허브의 정적 호스팅에 올린 사이트는 서버 함수를 둘 수
         없으므로, AI 호출이 필요한 앱은 서버 함수를 지원하는 곳에 배포하십시오.
       </p>
-      <pre>{proxyRouteExample(exampleModel)}</pre>
-      <pre>{BROWSER_EXAMPLE}</pre>
+      <CodeBlock text={proxyRouteExample(exampleModel)} />
+      <CodeBlock text={BROWSER_EXAMPLE} />
       <p className="muted">
         전체 예제(Next.js·Vercel 함수·Express, 환경변수 설정, 점검 목록):{" "}
         <a href="/downloads/ai-proxy-example.md">ai-proxy-example.md</a>

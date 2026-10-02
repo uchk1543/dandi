@@ -23,6 +23,7 @@ import { KeyCreateForm } from "./key-create-form";
 import { KeyRowActions } from "./key-row-actions";
 import { ModelsForm } from "./models-form";
 import { ArchiveProjectForm, SettingsForm } from "./settings-form";
+import { CodeBlock } from "@/components/copy-button";
 
 // [프로젝트 /studio/projects/[id]] 개요 · 키 · 사용량 · 모델 · 설정 탭(?tab=) (F-31 ~ F-35).
 
@@ -217,7 +218,7 @@ function OverviewTab({ detail }: { detail: ProjectDetail }) {
           ))}
         </ul>
       )}
-      <pre>{`// dandi.json\n{\n  "projectId": "${project.id}"\n}`}</pre>
+      <CodeBlock text={`// dandi.json\n{\n  "projectId": "${project.id}"\n}`} />
 
       <h2>다음 단계</h2>
       <ol>

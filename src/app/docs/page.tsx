@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CopyButton } from "@/components/copy-button";
+import { CodeBlock } from "@/components/copy-button";
 import { DOC_PAGES, LEGACY_GUIDE_ANCHORS, llmResources } from "@/lib/docs";
 import { hubOrigin } from "@/lib/origin";
 import { connectPrompt, isLocalHub, normalizeHubOrigin, readCliVersion } from "@/lib/runbook";
@@ -31,9 +31,9 @@ export default async function DocsIndexPage() {
           사이트 폴더를 연 AI 코딩 도구(Claude Code, Codex, Cursor, Antigravity, Grok 등)에 붙여 넣으십시오. 로그인이
           필요하면 AI가 승인 링크를 보여 주고, 승인하면 바로 올린 뒤 비공개 미리보기 주소를 알려 줍니다.
         </p>
-        <pre>{prompt}</pre>
+        <CodeBlock text={prompt} label="문장 복사" kind="prompt" />
         <p>
-          <CopyButton text={prompt} label="문장 복사" /> <Link href="/docs/ai-publish">진행 순서 보기</Link> ·{" "}
+          <Link href="/docs/ai-publish">진행 순서 보기</Link> ·{" "}
           <Link href="/connect">도구별 연결</Link>
         </p>
         <p className="muted">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { CopyButton } from "@/components/copy-button";
+import { CodeBlock, CopyButton } from "@/components/copy-button";
 import { PiiInput } from "@/components/pii-guard";
 import { submitWithoutReset } from "@/components/submit-without-reset";
 import { createKeyAction, type KeyCreateState } from "../actions";
@@ -48,7 +48,7 @@ export function KeyCreateForm({
             401(browser_key_forbidden)로 거부합니다. 미니앱 서버의 .env.local 파일이나 배포 환경변수에 아래처럼
             넣으십시오.
           </p>
-          <pre>{`DANDI_PROJECT_KEY=${secret}\nDANDI_HUB_URL=${hubOrigin}`}</pre>
+          <CodeBlock text={`DANDI_PROJECT_KEY=${secret}\nDANDI_HUB_URL=${hubOrigin}`} />
         </div>
       )}
 

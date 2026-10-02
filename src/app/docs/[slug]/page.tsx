@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { adjacentDocs, DOC_PAGES, docBody, docMarkdownUrl, getDocPage } from "@/lib/docs";
+import { CopyablePres } from "@/components/copy-button";
 import { renderMarkdown } from "@/lib/docs/markdown";
 import { hubOrigin } from "@/lib/origin";
 import { cliPrefix, normalizeHubOrigin, readCliVersion } from "@/lib/runbook";
@@ -55,7 +56,7 @@ export default async function DocView({ params }: Props) {
         </details>
       )}
 
-      <div dangerouslySetInnerHTML={{ __html: html }} />
+      <CopyablePres html={html} />
 
       <nav className="filter" aria-label="이전·다음 문서" style={{ marginTop: 24 }}>
         {prev && <Link href={`/docs/${prev.slug}`}>이전: {prev.title}</Link>}

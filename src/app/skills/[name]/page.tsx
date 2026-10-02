@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatKstDate } from "@/components/app-card";
-import { CopyButton } from "@/components/copy-button";
+import { CodeBlock } from "@/components/copy-button";
 import { levelLabel } from "@/lib/constants";
 import { hubOrigin } from "@/lib/origin";
 import { getCurrentUser } from "@/lib/session";
@@ -132,10 +132,7 @@ export default async function SkillPage({ params, searchParams }: { params: Para
               </Link>
             ))}
           </nav>
-          <pre>{tab.command}</pre>
-          <p>
-            <CopyButton text={tab.command} label="설치 명령 복사" />
-          </p>
+          <CodeBlock text={tab.command} label="설치 명령 복사" kind="command" />
           <p className="muted">
             {tab.note} 터미널에서 실행하거나 AI 코딩 도구에게 &quot;이 명령을 실행해 스킬을 설치해 줘&quot;라고 붙여 넣으십시오.
             Node.js가 필요합니다.

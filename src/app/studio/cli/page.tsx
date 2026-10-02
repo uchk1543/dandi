@@ -5,6 +5,7 @@ import { listCliTokens } from "@/lib/cli";
 import { getCurrentUser, isTeacher } from "@/lib/session";
 import { revokeTokenAction } from "./actions";
 import { IssueTokenForm } from "./issue-form";
+import { CodeBlock } from "@/components/copy-button";
 
 // F-17 CLI 토큰 발급·폐기와 dandi 사용법(PRD 9장 "CLI 토큰 발급").
 
@@ -44,7 +45,7 @@ export default async function StudioCliPage() {
         코드를 확인하고 승인하는 것만으로 이 목록에 토큰이 생깁니다. 직접 발급은 CI·자동화용입니다. 쓰지 않는 기기의
         토큰은 폐기하십시오. MCP로 연결된 AI 도구는 <Link href="/oauth/connections">연결된 AI 도구</Link>에서 관리합니다.
       </p>
-      <pre>{`${cli} login`}</pre>
+      <CodeBlock text={`${cli} login`} />
 
       <h2>CI용 토큰 발급</h2>
       <IssueTokenForm
@@ -105,7 +106,7 @@ export default async function StudioCliPage() {
         Node.js 18 이상만 있으면 설치 없이 <code>npx</code>로 실행됩니다. AI 코딩 도구에 맡기려면{" "}
         <Link href="/connect">AI로 연결하기</Link>의 문장 한 줄을 붙여 넣으십시오.
       </p>
-      <pre>{`# 1. 로그인: 브라우저가 열리면 화면의 코드가 터미널의 코드와 같은지 확인하고 [승인]
+      <CodeBlock text={`# 1. 로그인: 브라우저가 열리면 화면의 코드가 터미널의 코드와 같은지 확인하고 [승인]
 ${cli} login
 ${cli} whoami
 
@@ -123,7 +124,7 @@ ${cli} publish --url https://내-앱.vercel.app
 
 # AI에게 보여 줄 안내문 원문, 로그아웃
 ${cli} guide
-${cli} logout`}</pre>
+${cli} logout`} />
       <p className="muted">
         dandi.json의 privacyCheck는 배포 전 개인정보 셀프점검입니다. init은 예·아니요 항목을 비워 두므로 5항목에 모두
         답해야 등록됩니다. 올린 사이트는 <Link href="/studio/sites">내 사이트</Link>, 등록한 앱은{" "}

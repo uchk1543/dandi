@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CopyButton } from "@/components/copy-button";
+import { CodeBlock } from "@/components/copy-button";
 import { hubOrigin } from "@/lib/origin";
 import {
   APPROVAL_RULE,
@@ -76,15 +76,9 @@ function SecretGuidance({ hub }: { hub: string }) {
 }
 
 /** 명령·문장 한 덩어리와 복사 버튼 */
-function Copyable({ text, label = "복사" }: { text: string; label?: string }) {
-  return (
-    <>
-      <pre>{text}</pre>
-      <p style={{ margin: "4px 0 12px" }}>
-        <CopyButton text={text} label={label} />
-      </p>
-    </>
-  );
+// "문장 복사"는 AI 도구 입력창에 붙여 넣는 지시문이고, 나머지는 터미널·설정에 넣는 명령이다.
+function Copyable({ text, label = "복사", kind }: { text: string; label?: string; kind?: "prompt" | "command" }) {
+  return <CodeBlock text={text} label={label} kind={kind ?? (label.includes("문장") ? "prompt" : undefined)} />;
 }
 
 /** 배포 스킬 설치(선택). 설치하면 "Dandi에 올려줘"만으로 AI가 같은 절차를 따른다. */
@@ -96,7 +90,7 @@ function SkillInstall({ command, folder }: { command: string; folder: string }) 
         프로젝트 폴더의 터미널에서 아래 명령을 실행하면 {folder}에 {DEPLOY_SKILL} 스킬이 설치됩니다. 그다음에는
         &quot;Dandi에 올려줘&quot;라고만 해도 AI가 같은 절차를 따릅니다.
       </p>
-      <Copyable text={command} />
+      <Copyable text={command} kind="command" />
     </>
   );
 }
@@ -127,9 +121,9 @@ export default async function ConnectPage({ searchParams }: { searchParams: Prom
           터미널에서 아래 한 줄을 실행한 뒤, Claude Code에서 <code>/mcp</code>를 입력하고 dandi를 골라 브라우저에서
           [허용]을 누르십시오.
         </p>
-        <Copyable text={m.claudeCode} />
+        <Copyable text={m.claudeCode} kind="command" />
         <p className="muted">로컬 MCP(브라우저 승인으로 로그인한 CLI를 그대로 사용):</p>
-        <Copyable text={m.claudeCodeStdio} />
+        <Copyable text={m.claudeCodeStdio} kind="command" />
         <RecopyNote />
         <SkillInstall command={skillCommand(["claude-code"])} folder=".claude/skills" />
       </>
@@ -143,11 +137,11 @@ export default async function ConnectPage({ searchParams }: { searchParams: Prom
           터미널에서 아래 한 줄을 실행하면 브라우저 승인 화면이 바로 열립니다. 명령은 브라우저에서 [허용]을 누를 때까지
           기다리므로 멈춘 것처럼 보여도 끄지 마십시오.
         </p>
-        <Copyable text={m.codex} />
+        <Copyable text={m.codex} kind="command" />
         <p className="muted">브라우저가 열리지 않는 이전 버전의 Codex라면 이어서 아래 명령을 실행하십시오.</p>
-        <Copyable text={m.codexLogin} />
+        <Copyable text={m.codexLogin} kind="command" />
         <p className="muted">로컬 MCP(브라우저 승인으로 로그인한 CLI를 그대로 사용):</p>
-        <Copyable text={m.codexStdio} />
+        <Copyable text={m.codexStdio} kind="command" />
         <RecopyNote />
         <SkillInstall command={skillCommand(["codex"])} folder=".agents/skills" />
         <h3>한 번에 실행할 때 (codex exec)</h3>
@@ -168,12 +162,12 @@ export default async function ConnectPage({ searchParams }: { searchParams: Prom
         <SkillInstall command={skillCommand(["antigravity-cli", "antigravity"])} folder=".agents/skills" />
         <h3>MCP로 연결하기 (선택)</h3>
         <p>터미널에서 아래 한 줄을 실행하십시오.</p>
-        <Copyable text={m.antigravity} />
+        <Copyable text={m.antigravity} kind="command" />
         <p className="muted">
           연결할 때 브라우저 승인 화면이 열리지 않거나 도구가 보이지 않으면, 아래 로컬 MCP(브라우저 승인으로 로그인한
           CLI를 그대로 사용)를 쓰십시오.
         </p>
-        <Copyable text={m.antigravityStdio} />
+        <Copyable text={m.antigravityStdio} kind="command" />
         <RecopyNote />
         <h3>한 번에 실행할 때 (agy -p)</h3>
         <p className="muted">
@@ -197,9 +191,9 @@ export default async function ConnectPage({ searchParams }: { searchParams: Prom
           터미널에서 아래 한 줄을 실행한 뒤 Grok에서 <code>/mcps</code>를 열고 dandi를 골라 <code>i</code>를 누르면
           브라우저 승인 화면이 열립니다. [허용]을 누르십시오.
         </p>
-        <Copyable text={m.grok} />
+        <Copyable text={m.grok} kind="command" />
         <p className="muted">로컬 MCP(브라우저 승인으로 로그인한 CLI를 그대로 사용):</p>
-        <Copyable text={m.grokStdio} />
+        <Copyable text={m.grokStdio} kind="command" />
         <RecopyNote />
         <h3>한 번에 실행할 때 (grok -p)</h3>
         <p className="muted">
@@ -344,6 +338,14 @@ export default async function ConnectPage({ searchParams }: { searchParams: Prom
           괄호 안을 채워 보내십시오.
         </p>
         <Copyable text={promptWithAnswers} label="답을 함께 적는 문장 복사" />
+        {local && (
+          <>
+            <p className="muted">
+              AI 없이 안내 내용만 직접 보려면 터미널에서 아래 명령을 실행하십시오(Windows PowerShell이면 npx.cmd).
+            </p>
+            <Copyable text={`${cli} guide`} label="명령 복사" kind="command" />
+          </>
+        )}
       </section>
       {local && (
         <p className="notice">
@@ -403,7 +405,7 @@ export default async function ConnectPage({ searchParams }: { searchParams: Prom
         프로젝트 폴더의 터미널에서 아래 명령을 실행하면 Claude Code, Cursor, Codex, Antigravity, Grok용 {DEPLOY_SKILL}{" "}
         스킬이 한 번에 설치되고 AI에게 보낼 문장이 나옵니다. Windows PowerShell에서는 앞의 npx를 npx.cmd로 바꾸십시오.
       </p>
-      <Copyable text={`${cli} setup`} />
+      <Copyable text={`${cli} setup`} kind="command" />
 
       <h2>AI가 묻는 셀프점검 5문항</h2>
       <p className="muted">

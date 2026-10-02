@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatKstDate } from "@/components/app-card";
-import { CopyButton } from "@/components/copy-button";
+import { CodeBlock } from "@/components/copy-button";
 import { appCategoryLabel, levelLabel } from "@/lib/constants";
 import { getTemplate } from "@/lib/templates";
 import { recordTemplateCopy } from "../actions";
@@ -72,15 +72,13 @@ export default async function TemplateDetailPage({
       </ol>
 
       <h2>작업 지시서</h2>
-      <p>
-        <CopyButton
-          text={template.workOrder}
-          label="작업 지시서 복사"
-          copiedMessage="복사했습니다. AI 코딩 도구의 입력창에 붙여 넣으십시오."
-          onCopyAction={recordTemplateCopy.bind(null, template.id)}
-        />
-      </p>
-      <pre>{template.workOrder}</pre>
+      <CodeBlock
+        text={template.workOrder}
+        label="작업 지시서 복사"
+        kind="prompt"
+        copiedMessage="복사했습니다. AI 코딩 도구의 입력창에 붙여 넣으십시오."
+        onCopyAction={recordTemplateCopy.bind(null, template.id)}
+      />
 
       <h2>예시 사이트</h2>
       <p className="muted">
