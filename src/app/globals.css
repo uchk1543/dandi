@@ -83,8 +83,11 @@ body {
   display: flex;
   flex-direction: column;
 }
-a { color: var(--brand); text-underline-offset: 3px; }
+/* 링크는 기본적으로 밑줄 없이 브랜드 색으로만 구분하고, 마우스를 올리면 밑줄을 보여 준다 */
+a { color: var(--brand); text-decoration: none; text-underline-offset: 3px; }
 a:hover { color: #5435c9; }
+/* 버튼·카드·메뉴처럼 클래스가 붙은 링크는 제외하고, 문장 속 링크에만 hover 밑줄 */
+a:not([class]):hover { text-decoration: underline; }
 img, svg { max-width: 100%; }
 :focus-visible { outline: 3px solid rgba(109, 74, 232, 0.45); outline-offset: 2px; border-radius: 6px; }
 
