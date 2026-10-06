@@ -3,6 +3,8 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { DATA_DIR, mutate, nowIso, readDb } from "./db";
+import { isRemoteStorage } from "./supabase-admin";
+import { supabaseSecretKey } from "./supabase-config";
 import { maskPII } from "./pii";
 import { isTeacher, writeAudit } from "./session";
 import { generateSecret, hashSecret } from "./tokens";
@@ -513,12 +515,18 @@ let rotationKeyCache: Buffer | null = null;
 /**
  * 후속 토큰을 만드는 서버 비밀 키. DANDI_OAUTH_SECRET(32자 이상)이 있으면 그 값을, 없으면
  * DATA_DIR/oauth-rotation.key(처음 쓸 때 무작위로 만들고 0600)를 쓴다. 여러 프로세스가 같은 DATA_DIR을 쓰면 같은 키를 읽는다.
+ * supabase 저장소에서는 인스턴스마다 파일이 따로라 SUPABASE_SECRET_KEY에서 만든 키를 쓴다(인스턴스끼리 같다).
  */
 function rotationKey(): Buffer {
   if (rotationKeyCache) return rotationKeyCache;
   const env = process.env.DANDI_OAUTH_SECRET;
   if (env && env.length >= 32) {
     rotationKeyCache = createHash("sha256").update(`dandi-oauth-rotation\n${env}`).digest();
+    return rotationKeyCache;
+  }
+  const shared = isRemoteStorage() ? supabaseSecretKey() : null;
+  if (shared) {
+    rotationKeyCache = createHash("sha256").update(`dandi-oauth-rotation/supabase\n${shared}`).digest();
     return rotationKeyCache;
   }
   const file = path.join(DATA_DIR, "oauth-rotation.key");

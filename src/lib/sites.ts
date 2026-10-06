@@ -1,7 +1,5 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { createApp, validateNewApp } from "./apps";
 import {
   clearUploadReceipts,
@@ -22,7 +20,7 @@ import {
   secretDetectedHint,
   siteSecretGuidance,
 } from "../app/studio/sites/secret-scan";
-import { DATA_DIR, mutate, newId, nowIso, readDb } from "./db";
+import { dbStamp, mutate, newId, nowIso, readDb } from "./db";
 import { siteOrigin } from "./origin";
 import { maskFields, maskPII, scanPII } from "./pii";
 import { ensureDefaultProjectIn } from "./projects";
@@ -1265,13 +1263,12 @@ function resolveLabelIn(db: DB, label: string): LabelResolution {
  * 사이트 서빙 캐시(QA global-lock-per-request-full-db). 파일 하나를 줄 때마다 db.json 전체를 잠그고 읽지 않도록
  * label → 배포 파일 목록을 메모리에 둔다. 다음 중 하나라도 바뀌면 다시 읽는다.
  * - 이 파일의 변경 함수(확정·publish·프로젝트 이동·삭제)가 올리는 버전 번호
- * - db.json의 수정 시각·크기(apps.ts의 승인·삭제처럼 다른 파일에서 바꾼 것도 바로 반영)
+ * - 저장소 표시값 dbStamp(local: db.json 수정 시각·크기, supabase: version. 다른 파일·인스턴스에서 바꾼 것도 반영)
  * - 5초 TTL(파일 시각 해상도가 낮은 환경 대비 상한)
  * 라우트마다 번들이 따로 만들어져도 같은 캐시를 쓰도록 globalThis에 둔다.
  */
 const SERVE_CACHE_TTL_MS = 5_000;
 const SERVE_CACHE_MAX = 256;
-const DB_FILE = path.join(DATA_DIR, "db.json");
 
 type ServeCacheEntry = { at: number; version: number; stamp: string; value: LabelResolution };
 type ServeCache = { version: number; entries: Map<string, ServeCacheEntry> };
@@ -1286,15 +1283,6 @@ export function invalidateSiteServeCache(): void {
   const cache = serveCache();
   cache.version += 1;
   cache.entries.clear();
-}
-
-async function dbStamp(): Promise<string | null> {
-  try {
-    const st = await fs.stat(DB_FILE);
-    return `${st.mtimeMs}:${st.size}`;
-  } catch {
-    return null;
-  }
 }
 
 async function resolveLabel(label: string): Promise<LabelResolution> {

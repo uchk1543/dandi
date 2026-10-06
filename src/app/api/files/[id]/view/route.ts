@@ -1,5 +1,3 @@
-import { createReadStream, promises as fs } from "node:fs";
-import { Readable } from "node:stream";
 import {
   etagMatches,
   fileEtag,
@@ -9,7 +7,7 @@ import {
   parseByteRange,
   storedFileIsPdf,
 } from "@/lib/books";
-import { getFile, storedFilePath } from "@/lib/files";
+import { getFile, statStored, streamStored } from "@/lib/files";
 import { getCurrentUser } from "@/lib/session";
 
 // F-44 PDF 브라우저 안 열람. 다운로드(/api/files/[id]/download)와 같은 파일을 Content-Disposition: inline으로 보낸다.
@@ -50,18 +48,9 @@ async function handle(req: Request, id: string, withBody: boolean): Promise<Resp
   const access = await fileInlineAccess(item.id, await getCurrentUser());
   if (!access.allowed) return textResponse(403, "교사 전용 책의 자료입니다. 교사 로그인 후 열람하십시오.");
 
-  const full = storedFilePath(item);
-  if (!full) return textResponse(404, "PDF 자료를 찾을 수 없습니다.");
-  let size: number;
-  let mtimeMs: number;
-  try {
-    const stat = await fs.stat(full);
-    if (!stat.isFile()) return textResponse(404, "저장된 파일이 없습니다.");
-    size = stat.size;
-    mtimeMs = stat.mtimeMs;
-  } catch {
-    return textResponse(404, "저장된 파일이 없습니다.");
-  }
+  const stat = await statStored(item);
+  if (!stat) return textResponse(404, "저장된 파일이 없습니다.");
+  const { size, mtimeMs } = stat;
   if (!(await storedFileIsPdf(item))) return textResponse(404, "PDF 형식이 아닌 파일입니다.");
 
   const etag = fileEtag(size, mtimeMs);
@@ -99,13 +88,15 @@ async function handle(req: Request, id: string, withBody: boolean): Promise<Resp
     headers["Content-Range"] = `bytes ${range.start}-${range.end}/${size}`;
     headers["Content-Length"] = String(range.end - range.start + 1);
     if (!withBody) return new Response(null, { status: 206, headers });
-    const part = Readable.toWeb(createReadStream(full, { start: range.start, end: range.end })) as ReadableStream<Uint8Array>;
+    const part = await streamStored(item, range);
+    if (!part) return textResponse(404, "저장된 파일이 없습니다.");
     return new Response(part, { status: 206, headers });
   }
 
   headers["Content-Length"] = String(size);
   if (!withBody) return new Response(null, { status: 200, headers });
-  const body = Readable.toWeb(createReadStream(full)) as ReadableStream<Uint8Array>;
+  const body = await streamStored(item);
+  if (!body) return textResponse(404, "저장된 파일이 없습니다.");
   return new Response(body, { status: 200, headers });
 }
 

@@ -1,15 +1,22 @@
 import "server-only";
-import { promises as fs } from "node:fs";
-import path from "node:path";
 import { UPLOAD_ALLOWED_EXT, UPLOAD_MAX_BYTES, isLevelOrAll, isSchoolLevel } from "./constants";
-import { mutate, newId, nowIso, readDb, UPLOAD_DIR } from "./db";
+import { mutate, newId, nowIso, readDb } from "./db";
+import {
+  readObject,
+  removeObject,
+  statObject,
+  streamObject,
+  writeObject,
+  type ByteRange,
+  type ObjectStat,
+} from "./object-store";
 import { maskFields } from "./pii";
 import { normalizeNewlines } from "./text";
 import { displayName, ensureUser, isTeacher, writeAudit } from "./session";
 import type { FileItem, LevelOrAll, User, DB } from "./types";
 
-// 자료실 도메인 로직(F-08). 파일 본문은 로컬 디렉터리(data/uploads)에 둔다.
-// v1.0에서 Supabase Storage로 옮길 때 writeStored/removeStored/storedFilePath만 바꾸면 된다.
+// 자료실 도메인 로직(F-08). 파일 본문은 object-store.ts의 uploads/<저장 이름>에 둔다
+// (local: data/uploads, supabase: Storage 버킷).
 
 export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
@@ -104,22 +111,35 @@ export async function getFile(id: string): Promise<FileItem | null> {
   return db.files.find((f) => f.id === id) ?? null;
 }
 
-/** 저장된 파일의 절대 경로. storedName이 규칙에 맞지 않으면 null. */
-export function storedFilePath(item: Pick<FileItem, "storedName">): string | null {
-  if (!STORED_NAME_RE.test(item.storedName)) return null;
-  const full = path.resolve(UPLOAD_DIR, item.storedName);
-  if (path.dirname(full) !== path.resolve(UPLOAD_DIR)) return null;
-  return full;
+/** 저장된 파일의 저장 키. storedName이 규칙에 맞지 않으면 null. */
+function storedKey(item: Pick<FileItem, "storedName">): string | null {
+  return STORED_NAME_RE.test(item.storedName) ? `uploads/${item.storedName}` : null;
+}
+
+/** 저장된 파일의 크기·수정 시각. 없으면 null. */
+export async function statStored(item: Pick<FileItem, "storedName">): Promise<ObjectStat | null> {
+  const key = storedKey(item);
+  return key ? statObject(key) : null;
+}
+
+/** 저장된 파일 본문 스트림(range는 양 끝 포함). 없으면 null. */
+export async function streamStored(
+  item: Pick<FileItem, "storedName">,
+  range?: ByteRange,
+): Promise<ReadableStream<Uint8Array> | null> {
+  const key = storedKey(item);
+  return key ? streamObject(key, range) : null;
+}
+
+/** 저장된 파일의 앞부분 n바이트(형식 확인용). 없으면 null. */
+export async function readStoredHead(item: Pick<FileItem, "storedName">, n: number): Promise<Uint8Array | null> {
+  const key = storedKey(item);
+  return key ? readObject(key, { start: 0, end: n - 1 }) : null;
 }
 
 async function removeStored(storedName: string): Promise<void> {
-  const full = storedFilePath({ storedName });
-  if (!full) return;
-  try {
-    await fs.unlink(full);
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
-  }
+  const key = storedKey({ storedName });
+  if (key) await removeObject(key);
 }
 
 export interface UploadInput {
@@ -156,15 +176,16 @@ export async function saveUpload(input: UploadInput, author: User): Promise<Resu
   // 저장 경로에는 원래 이름을 쓰지 않는다(경로 조작 방지). 무작위 id로만 이름을 만든다.
   const id = newId("file");
   const storedName = `${id}.${ext}`;
-  const target = storedFilePath({ storedName });
+  const target = storedKey({ storedName });
   if (!target) return { ok: false, error: "저장 이름을 만들지 못했습니다. 다시 시도하십시오." };
 
-  const bytes = Buffer.from(await file.arrayBuffer());
+  const bytes = new Uint8Array(await file.arrayBuffer());
   if (bytes.byteLength !== file.size || bytes.byteLength > UPLOAD_MAX_BYTES) {
     return { ok: false, error: "파일을 읽지 못했습니다. 다시 시도하십시오." };
   }
-  await fs.mkdir(UPLOAD_DIR, { recursive: true });
-  await fs.writeFile(target, bytes, { flag: "wx" });
+  if (!(await writeObject(target, bytes))) {
+    return { ok: false, error: "저장 이름이 겹쳤습니다. 다시 시도하십시오." };
+  }
 
   const item: FileItem = {
     id,

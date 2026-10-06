@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
     // 같은 헤더 키가 여러 규칙에 걸리면 뒤의 규칙이 이긴다. 승인 화면 규칙을 마지막에 둔다.
     return [
       { source: "/:path*", missing: SITE_HOSTS, headers: SAME_ORIGIN_ONLY },
-      ...["/login", "/device", "/device/:path*", "/oauth/:path*"].map((source) => ({
+      ...["/login", "/login/:path*", "/device", "/device/:path*", "/oauth/:path*"].map((source) => ({
         source,
         missing: SITE_HOSTS,
         headers: NO_FRAME,

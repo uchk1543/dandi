@@ -1,7 +1,5 @@
-import { createReadStream, promises as fs } from "node:fs";
-import { Readable } from "node:stream";
 import { canViewFileInline } from "@/lib/books";
-import { getFile, incrementDownloads, storedFilePath } from "@/lib/files";
+import { getFile, incrementDownloads, statStored, streamStored } from "@/lib/files";
 import { getCurrentUser } from "@/lib/session";
 
 // F-08 자료 다운로드. 로그인 없이 누구나 받을 수 있다(F-01 익명 우선).
@@ -40,16 +38,9 @@ async function handle(id: string, withBody: boolean): Promise<Response> {
     });
   }
 
-  const full = storedFilePath(item);
-  if (!full) return notFound("자료를 찾을 수 없습니다.");
-  let size: number;
-  try {
-    const stat = await fs.stat(full);
-    if (!stat.isFile()) return notFound("저장된 파일이 없습니다.");
-    size = stat.size;
-  } catch {
-    return notFound("저장된 파일이 없습니다.");
-  }
+  const stat = await statStored(item);
+  if (!stat) return notFound("저장된 파일이 없습니다.");
+  const size = stat.size;
 
   const headers = {
     "Content-Type": item.mime || "application/octet-stream",
@@ -62,8 +53,9 @@ async function handle(id: string, withBody: boolean): Promise<Response> {
   if (!withBody) return new Response(null, { status: 200, headers });
 
   // HEAD 요청이나 404는 세지 않고, 실제로 본문을 보내는 GET만 다운로드 수에 더한다.
+  const body = await streamStored(item);
+  if (!body) return notFound("저장된 파일이 없습니다.");
   await incrementDownloads(item.id);
-  const body = Readable.toWeb(createReadStream(full)) as ReadableStream<Uint8Array>;
   return new Response(body, { status: 200, headers });
 }
 

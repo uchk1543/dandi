@@ -5,12 +5,19 @@ export type SchoolLevel = "elem" | "middle" | "high" | "special";
 /** 게시글·자료처럼 학교급 전체를 대상으로 할 수 있는 콘텐츠용 */
 export type LevelOrAll = SchoolLevel | "all";
 
+/** 소셜 로그인(F-02) 제공자. Supabase Auth의 provider 이름과 같다. */
+export type SocialProvider = "google" | "kakao";
+
 export interface User {
   id: string; // 공개 id. 로그인 계정은 무작위(u_...), 익명 방문자는 세션 값의 해시(session.ts userIdForSession).
   role: Role;
   name: string | null;
   schoolLevel: SchoolLevel | null;
   createdAt: string;
+  /** 소셜 로그인 계정이면 제공자. 데모 로그인 계정은 없음 */
+  authProvider?: SocialProvider;
+  /** 소셜 로그인 계정의 Supabase Auth 사용자 id. 이메일 등 다른 개인정보는 저장하지 않는다 */
+  authSubject?: string;
 }
 
 /* ---------- 미니앱 (F-04 ~ F-06, F-16) ---------- */

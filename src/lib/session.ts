@@ -68,6 +68,10 @@ export function isTeacher(user: User): boolean {
 export async function requireTeacher(): Promise<User> {
   const user = await getCurrentUser();
   if (!isTeacher(user)) throw new AuthError("교사 로그인이 필요합니다.");
+  // 소셜 로그인(F-02) 계정은 이름·학교급(F-03)을 정하기 전에는 글·앱을 올리지 못한다(login.ts needsProfile과 같은 조건).
+  if (user.authProvider && (!user.name || !user.schoolLevel)) {
+    throw new AuthError("먼저 /login/profile에서 작성자 이름과 학교급을 정하십시오.");
+  }
   return user;
 }
 

@@ -6,32 +6,11 @@ import { isSchoolLevel } from "@/lib/constants";
 import { mutate, newId, nowIso } from "@/lib/db";
 import { safeNextPath } from "@/lib/origin";
 import { hasPII } from "@/lib/pii";
-import { getSessionId, rotateSession, userIdForSession, writeAudit } from "@/lib/session";
-import { hashSecret } from "@/lib/tokens";
-import type { DB, User } from "@/lib/types";
+import { NAME_MAX, revokeSession, startLoginSession } from "@/lib/login";
+import { getSessionId, rotateSession, writeAudit } from "@/lib/session";
+import type { User } from "@/lib/types";
 
 export type LoginState = { error?: string };
-
-const NAME_MAX = 30;
-
-function revokeSession(db: DB, sid: string | null): void {
-  if (!sid) return;
-  const hash = hashSecret(sid);
-  for (const s of db.sessions) if (s.sidHash === hash && !s.revokedAt) s.revokedAt = nowIso();
-}
-
-/** 익명일 때 누른 좋아요를 로그인 계정으로 옮긴다. 이미 계정으로 누른 글은 중복을 지운다. */
-function moveAnonLikes(db: DB, anonId: string, accountId: string): void {
-  if (anonId === accountId) return;
-  const liked = new Set(db.likes.filter((l) => l.userId === accountId).map((l) => l.postId));
-  db.likes = db.likes.filter((l) => {
-    if (l.userId !== anonId) return true;
-    if (liked.has(l.postId)) return false;
-    liked.add(l.postId);
-    l.userId = accountId;
-    return true;
-  });
-}
 
 // 데모 로그인(F-02 대체). 실제 서비스에서는 Supabase Auth의 구글·카카오 로그인으로 바뀐다.
 // 같은 이름·역할로 다시 로그인하면 같은 계정으로 들어간다(소셜 로그인과 같은 동작). 계정의 앱·글·토큰·키를 그대로 관리할 수 있다.
@@ -54,16 +33,15 @@ export async function demoLogin(_prev: LoginState, formData: FormData): Promise<
   const oldSid = await getSessionId();
   const newSid = await rotateSession();
   await mutate((db) => {
-    revokeSession(db, oldSid);
-    let account: User | undefined = db.users.find((u) => u.role === role && u.name === name);
+    // 소셜 로그인 계정은 이름이 같아도 데모 로그인으로 들어갈 수 없다.
+    let account: User | undefined = db.users.find((u) => u.role === role && u.name === name && !u.authProvider);
     if (account) {
       account.schoolLevel = schoolLevel;
     } else {
       account = { id: newId("u"), role, name, schoolLevel, createdAt: nowIso() };
       db.users.push(account);
     }
-    db.sessions.push({ sidHash: hashSecret(newSid), userId: account.id, createdAt: nowIso(), revokedAt: null });
-    if (oldSid) moveAnonLikes(db, userIdForSession(oldSid), account.id);
+    startLoginSession(db, account, oldSid, newSid);
     writeAudit(db, account, "auth.demo_login", account.id, role);
   });
   revalidatePath("/", "layout");

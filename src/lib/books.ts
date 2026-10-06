@@ -1,6 +1,5 @@
 import "server-only";
 import dns from "node:dns";
-import { promises as fs } from "node:fs";
 import http from "node:http";
 import https from "node:https";
 import net from "node:net";
@@ -8,7 +7,7 @@ import type { Readable } from "node:stream";
 import zlib from "node:zlib";
 import { isLevelOrAll, isSchoolLevel } from "./constants";
 import { mutate, newId, nowIso, readDb } from "./db";
-import { saveUpload, storedFilePath } from "./files";
+import { readStoredHead, saveUpload } from "./files";
 import { maskFields, maskPII } from "./pii";
 import { displayName, ensureUser, isTeacher, writeAudit } from "./session";
 import { normalizeNewlines, urlHasPII } from "./text";
@@ -211,18 +210,11 @@ export function notModifiedSince(ifModifiedSince: string | null | undefined, mti
 
 export async function storedFileIsPdf(item: Pick<FileItem, "storedName" | "ext">): Promise<boolean> {
   if (item.ext !== "pdf") return false;
-  const full = storedFilePath(item);
-  if (!full) return false;
-  let handle: fs.FileHandle | null = null;
   try {
-    handle = await fs.open(full, "r");
-    const buf = Buffer.alloc(1024);
-    const { bytesRead } = await handle.read(buf, 0, buf.length, 0);
-    return looksLikePdf(buf.subarray(0, bytesRead));
+    const head = await readStoredHead(item, 1024);
+    return head ? looksLikePdf(head) : false;
   } catch {
     return false;
-  } finally {
-    await handle?.close();
   }
 }
 
