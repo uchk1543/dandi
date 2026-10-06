@@ -371,8 +371,8 @@ ${noShell}
 ## Steps
 1. \`${cli} whoami --json\` → exit 0: step 3. exit 4: step 2.
 2. \`${cli} login --hub ${h} --json\` → exit 5, "done":false.
-   Show \`verification_uri_complete\`; say: "위 링크를 열고, 코드가 <user_code>와 같으면 [승인]을 누르십시오."
-   WAIT: don't end your turn; run next_step (login --wait) now, it waits ≤90 s for approval: exit 0 → step 3 · 5 pending → again · 6 denied → ASK before retrying · 7 expired → step 2 once, then stop.
+   Show \`verification_uri_complete\`; say: "승인 창(없으면 위 링크)에서 코드가 <user_code>와 같으면 [승인]을 누르십시오."
+   WAIT: don't end your turn; run next_step (login --wait) now; it waits ≤90 s: exit 0 → step 3 · 5 pending → again · 6 denied → ASK before retrying · 7 expired → step 2 once, then stop.
 3. Deploy now (build first if package.json has a build script): \`${cli} deploy --json\` picks outputDir, dist/, build/, out/ or this folder (index.html at its root; the project folder only without package.json). Name a folder only if the teacher did; ASK only if unclear.
 4. Show \`previewUrl\`; say: "비공개 미리보기입니다. 아직 허브에 공개되지 않았습니다." Name files in \`warnings\` (personal data) and \`skipped\` (not uploaded; suggest /files or PDF). \`notes\` are info only.${previewCheck}
 5. If the request already has 제목·설명·학교급·분류·①~⑤, use those; don't ask again. Else ASK in ONE message, answers suggested from the code, the teacher confirms each: "공개 전에 아래 항목에 직접 답해 주십시오."
@@ -534,10 +534,10 @@ ${noShellRows}
 1. \`${cli} login --hub ${h} --json\` starts a device login and exits 5. Example output:
 
 \`\`\`json
-{"ok":true,"status":"pending","done":false,"user_code":"WDJB-MJHT","verification_uri":"${h}/device","verification_uri_complete":"${h}/device?code=WDJB-MJHT","expires_in":600,"next_step":"${cli} login --wait --json","agent_instructions":"Show verification_uri_complete and user_code to the user exactly as given and ask them to approve in the browser. Then, in the same turn, run next_step in the foreground (not as a background task; do not end your turn to wait for a reply). It waits up to 90 seconds for the approval by itself. Repeat next_step while status is pending."}
+{"ok":true,"status":"pending","done":false,"user_code":"WDJB-MJHT","verification_uri":"${h}/device","verification_uri_complete":"${h}/device?code=WDJB-MJHT","expires_in":600,"browser_opened":false,"next_step":"${cli} login --wait --json","agent_instructions":"Show verification_uri_complete and user_code to the user exactly as given and ask them to approve in the browser. Then, in the same turn, run next_step in the foreground (not as a background task; do not end your turn to wait for a reply). It waits up to 90 seconds for the approval by itself. Repeat next_step while status is pending."}
 \`\`\`
 
-2. Show verification_uri_complete on its own line and the user_code. The teacher opens it, logs in if needed, checks that the code matches and presses [승인].
+2. The CLI also opens it in the browser (\`browser_opened\`). Show verification_uri_complete and the user_code; the teacher logs in if needed, checks the code and presses [승인].
 3. Run next_step right away: \`login --wait --json\` polls for up to 90 seconds (\`--timeout\` changes it). exit 0 → logged in, go on to deploy. exit 5 → run it again. exit 6 → denied: the teacher may not have asked for this login, so ASK before starting a new one. exit 7 → expired: start login once more.
 - Already logged in: run whoami first. Starting login again only creates another approval request.
 - Codes are 8 letters (XXXX-XXXX), valid for 10 minutes, single use. The approval page shows the requesting tool, computer name, OS and time, and warns: "직접 AI에게 Dandi 로그인을 시킨 경우에만 승인하십시오. 웹사이트나 다른 사람이 이 코드를 보냈다면 거부하십시오."

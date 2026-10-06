@@ -153,6 +153,23 @@ export const AGENT_ENV_VARS = [
 export const AGENT_INSTRUCTIONS_LOGIN =
   "Show verification_uri_complete and user_code to the user exactly as given and ask them to approve in the browser. Then, in the same turn, run next_step in the foreground (not as a background task; do not end your turn to wait for a reply). It waits up to 90 seconds for the approval by itself. Repeat next_step while status is pending.";
 
+/** login --json이 승인 화면을 기본 브라우저로 열었을 때(browser_opened: true)의 안내 */
+export const AGENT_INSTRUCTIONS_LOGIN_OPENED =
+  "The approval page was just opened in the teacher's default browser. Tell the teacher to press [승인] in that browser window if its code matches user_code, and also show verification_uri_complete exactly as given in case the window did not appear. Then, in the same turn, run next_step in the foreground (not as a background task; do not end your turn to wait for a reply). It waits up to 90 seconds for the approval by itself. Repeat next_step while status is pending.";
+
+/**
+ * 이 환경에서 승인 화면을 브라우저로 열어도 되는가. 화면이 없거나(디스플레이 없는 Linux) 원격(SSH)·CI이면
+ * 열지 않고 링크만 보여 준다. DANDI_NO_BROWSER나 BROWSER=none이면 열지 않는다.
+ * @param {Record<string, string | undefined>} env
+ * @param {NodeJS.Platform} [platform]
+ */
+export function canOpenBrowser(env, platform = process.platform) {
+  if (env.DANDI_NO_BROWSER || env.BROWSER === "none") return false;
+  if (env.CI || env.SSH_CONNECTION || env.SSH_TTY) return false;
+  if (platform === "linux" && !env.DISPLAY && !env.WAYLAND_DISPLAY) return false;
+  return true;
+}
+
 /* ---------- 명령줄 인자 ---------- */
 
 const VALUE_FLAGS = new Set(["hub", "url", "title", "dir", "site", "slug", "timeout", "agent", "project"]);
@@ -683,10 +700,12 @@ export function humanErrorLines(e) {
 /**
  * login --json(대기 시작)과 login --wait의 대기 출력(계약 3-2의 예시 + done:false).
  * ok:true지만 아직 끝나지 않았다는 뜻으로 done:false를 붙인다(종료 코드 5).
+ * browserOpened는 대기 시작 때만 넘긴다(승인 화면을 브라우저로 열었는지). login --wait 출력에는 없다.
  * @param {{ user_code: string, verification_uri: string, verification_uri_complete: string, expires_in: number }} start
  * @param {string} prefix
+ * @param {boolean} [browserOpened]
  */
-export function loginPendingJson(start, prefix) {
+export function loginPendingJson(start, prefix, browserOpened) {
   return {
     ok: true,
     status: "pending",
@@ -695,8 +714,9 @@ export function loginPendingJson(start, prefix) {
     verification_uri: start.verification_uri,
     verification_uri_complete: start.verification_uri_complete,
     expires_in: start.expires_in,
+    ...(browserOpened === undefined ? {} : { browser_opened: browserOpened }),
     next_step: nextStep(prefix, "login --wait --json"),
-    agent_instructions: AGENT_INSTRUCTIONS_LOGIN,
+    agent_instructions: browserOpened ? AGENT_INSTRUCTIONS_LOGIN_OPENED : AGENT_INSTRUCTIONS_LOGIN,
   };
 }
 
@@ -1727,7 +1747,7 @@ PowerShell: run \`[Console]::OutputEncoding=[Text.Encoding]::UTF8\` first and re
 1. \`${prefix} whoami --json\` → exit 0: go to 3. exit 4: go to 2. If cli_update is present, use its prefix from now on.
 2. \`${prefix} login --json\` (exit 5 = waiting for approval, "done": false)
    Show verification_uri_complete on its own line, then say:
-   "링크를 열고, 화면의 코드가 <user_code>와 같으면 [승인]을 눌러 주십시오."
+   "브라우저에 뜬 승인 창(없으면 위 링크)에서 코드가 <user_code>와 같으면 [승인]을 눌러 주십시오."
    WAIT: don't end your turn; run \`${prefix} login --wait --json\` now (waits ≤90 s). exit 5 → run it again. exit 0 → step 3.
    exit 6 (denied): ASK whether the teacher wants to log in; start again only if they say yes. exit 7 (expired): step 2 once more.
 3. Deploy now (build first if package.json has a build script): \`${prefix} deploy --json\`

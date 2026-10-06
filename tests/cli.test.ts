@@ -5,6 +5,8 @@ import path from "node:path";
 import {
   AGENT_ENV_VARS,
   AGENT_INSTRUCTIONS_LOGIN,
+  AGENT_INSTRUCTIONS_LOGIN_OPENED,
+  canOpenBrowser,
   ANSWERS_TEMPLATE,
   APPROVAL_RULE,
   CLI_BUILD,
@@ -487,6 +489,36 @@ test("loginPendingJson: 계약 3-2 예시와 같은 순서, 아직 끝나지 않
     `{"ok":true,"status":"pending","done":false,"user_code":"WDJB-MJHT","verification_uri":"http://localhost:3000/device","verification_uri_complete":"http://localhost:3000/device?code=WDJB-MJHT","expires_in":600,"next_step":"npx -y http://localhost:3000/${CLI_BUILD.tarball} login --wait --json","agent_instructions":"Show verification_uri_complete and user_code to the user exactly as given and ask them to approve in the browser. Then, in the same turn, run next_step in the foreground (not as a background task; do not end your turn to wait for a reply). It waits up to 90 seconds for the approval by itself. Repeat next_step while status is pending."}`,
   );
   assert.equal(out.agent_instructions, AGENT_INSTRUCTIONS_LOGIN);
+});
+
+test("loginPendingJson: 대기 시작 때만 browser_opened, 열었으면 브라우저 창에서 승인하라는 안내", () => {
+  const prefix = npxPrefix("http://localhost:3000", {}, CLI_BUILD.tarball, "linux");
+  const start = {
+    user_code: "WDJB-MJHT",
+    verification_uri: "http://localhost:3000/device",
+    verification_uri_complete: "http://localhost:3000/device?code=WDJB-MJHT",
+    expires_in: 600,
+  };
+  const opened = loginPendingJson(start, prefix, true);
+  assert.deepEqual(Object.keys(opened).slice(7, 9), ["browser_opened", "next_step"]);
+  assert.equal(opened.browser_opened, true);
+  assert.equal(opened.agent_instructions, AGENT_INSTRUCTIONS_LOGIN_OPENED);
+  const notOpened = loginPendingJson(start, prefix, false);
+  assert.equal(notOpened.browser_opened, false);
+  assert.equal(notOpened.agent_instructions, AGENT_INSTRUCTIONS_LOGIN);
+  assert.equal("browser_opened" in loginPendingJson(start, prefix), false);
+});
+
+test("canOpenBrowser: 화면 없는 Linux·SSH·CI·DANDI_NO_BROWSER에서는 열지 않음", () => {
+  assert.equal(canOpenBrowser({}, "darwin"), true);
+  assert.equal(canOpenBrowser({}, "win32"), true);
+  assert.equal(canOpenBrowser({ DISPLAY: ":0" }, "linux"), true);
+  assert.equal(canOpenBrowser({ WAYLAND_DISPLAY: "wayland-0" }, "linux"), true);
+  assert.equal(canOpenBrowser({}, "linux"), false);
+  assert.equal(canOpenBrowser({ SSH_CONNECTION: "1 2 3 4" }, "darwin"), false);
+  assert.equal(canOpenBrowser({ CI: "true" }, "darwin"), false);
+  assert.equal(canOpenBrowser({ DANDI_NO_BROWSER: "1" }, "darwin"), false);
+  assert.equal(canOpenBrowser({ BROWSER: "none" }, "win32"), false);
 });
 
 test("redactSecrets: 토큰·키·device code를 가림", () => {

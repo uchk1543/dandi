@@ -384,9 +384,10 @@ test("login --json: 승인 링크·코드를 JSON 한 개로 출력하고 종료
   assert.equal(r.code, 5, r.stderr);
   const out = onlyJson(r);
   assert.deepEqual(Object.keys(out), [
-    "ok", "status", "done", "user_code", "verification_uri", "verification_uri_complete", "expires_in", "next_step", "agent_instructions",
+    "ok", "status", "done", "user_code", "verification_uri", "verification_uri_complete", "expires_in", "browser_opened", "next_step", "agent_instructions",
   ]);
   assert.equal(out.ok, true);
+  assert.equal(out.browser_opened, false); // 테스트는 DANDI_NO_BROWSER=1
   assert.equal(out.status, "pending");
   assert.equal(out.done, false);
   assert.match(String(out.user_code), /^[BCDFGHJKLMNPQRSTVWXZ]{4}-[BCDFGHJKLMNPQRSTVWXZ]{4}$/);

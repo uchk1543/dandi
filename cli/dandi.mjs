@@ -37,6 +37,7 @@ import {
   isValidSlug,
   llmsTxtSkeleton,
   loginPendingJson,
+  canOpenBrowser,
   manifestString,
   nextStep,
   npxPrefix,
@@ -147,7 +148,7 @@ function dirOption(ctx, dir) {
 
 /** @param {string} url @param {Record<string, string | undefined>} env */
 function openBrowser(url, env) {
-  if (env.DANDI_NO_BROWSER || env.BROWSER === "none") return false;
+  if (!canOpenBrowser(env)) return false;
   if (!/^https?:\/\/[^\s"'<>^&|%]+$/.test(url)) return false;
   try {
     const [cmd, args] =
@@ -311,11 +312,12 @@ async function cmdLogin(ctx, parsed, ui) {
   }
 
   const start = await core.deviceStart(ctx, hub);
+  // AI 에이전트가 실행할 때(--json)도 승인 화면을 기본 브라우저로 연다. 대기 시작 때 한 번만 열고 login --wait는 열지 않는다.
+  const opened = openBrowser(start.verification_uri_complete, ctx.env);
   if (ui.json) {
-    ui.printJson(loginPendingJson(start, prefix));
+    ui.printJson(loginPendingJson(start, prefix, opened));
     return EXIT.PENDING;
   }
-  const opened = openBrowser(start.verification_uri_complete, ctx.env);
   ui.out(opened ? "브라우저를 열었습니다. 화면의 코드가 아래 코드와 같으면 [승인]을 누르십시오." : "브라우저에서 아래 주소를 열고, 화면의 코드가 아래 코드와 같으면 [승인]을 누르십시오.");
   ui.out(start.verification_uri_complete);
   ui.out(`코드: ${start.user_code}`);
