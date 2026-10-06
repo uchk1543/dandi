@@ -1,11 +1,22 @@
 import { readBlob } from "@/lib/blobs";
-import { resolveSiteRequest } from "@/lib/sites";
-import { SITE_PATH_HEADER, hubOriginsForSiteHost, requestHost, requestProto, siteLabelFromHost } from "../../host";
+import { resolveSiteRequest, type SiteServeResult } from "@/lib/sites";
+import {
+  SITE_FULL_PATH_HEADER,
+  SITE_PATH_HEADER,
+  SITE_REFERER_LABEL_HEADER,
+  hubOriginsForSiteHost,
+  isSitesPathHost,
+  requestHost,
+  requestProto,
+  siteLabelFromHost,
+  sitesPathOrigin,
+} from "../../host";
 
 // 허브 정적 호스팅 서빙(F-51). proxy.ts가 <label>.localhost(또는 <label>.<SITES_DOMAIN>) 요청을
 // /site-serve/<label>/<경로>로 rewrite하면 여기서 배포 파일을 돌려준다.
 // 허브 호스트로 이 경로에 직접 들어온 요청은 404로 막는다. 업로드된 HTML이 허브 origin에서 실행되면
 // 교사 세션 쿠키로 허브 API를 호출할 수 있기 때문이다. 사이트 응답에는 Set-Cookie를 넣지 않는다.
+// 경로형(SITES_ORIGIN 호스트)은 https://<사이트 호스트>/<label>/<경로>를 받는다(proxy.ts).
 
 type Ctx = { params: Promise<{ label: string; path?: string[] }> };
 
@@ -93,15 +104,50 @@ function parseRange(header: string | null, size: number): { start: number; end: 
   return { start, end };
 }
 
+const NO_SITE: SiteServeResult = { kind: "not_found", preview: false, reason: "no_site" };
+
+function served(r: SiteServeResult): boolean {
+  return r.kind === "file" && r.status === 200;
+}
+
+/**
+ * 경로형 요청을 해석한다. 먼저 첫 경로 조각의 label로 찾고, 못 찾으면 Referer의 label 사이트에서 전체 경로로 찾는다.
+ * (Vite 기본 빌드처럼 /assets/... 절대 경로로 파일을 부르는 사이트용.) 페이지 이동이면 그 사이트 주소로 다시 보내
+ * 이후 상대 경로·Referer가 사이트 안을 가리키게 한다.
+ */
+async function resolvePathMode(req: Request, label: string): Promise<SiteServeResult | Response> {
+  const pathLabel = label === "_" ? null : label;
+  const rest = req.headers.get(SITE_PATH_HEADER) ?? "/";
+  const full = req.headers.get(SITE_FULL_PATH_HEADER) ?? rest;
+  const refLabel = req.headers.get(SITE_REFERER_LABEL_HEADER);
+  const direct = pathLabel ? await resolveSiteRequest(pathLabel, rest, `/${pathLabel}`) : NO_SITE;
+  if (served(direct) || !refLabel || refLabel === pathLabel) return direct;
+  const viaReferer = await resolveSiteRequest(refLabel, full, `/${refLabel}`);
+  if (!served(viaReferer)) return direct;
+  const origin = sitesPathOrigin();
+  if (origin && req.headers.get("sec-fetch-mode") === "navigate") {
+    const search = new URL(req.url).search;
+    return new Response(null, { status: 307, headers: { Location: `${origin}/${refLabel}${full}${search}`, "Cache-Control": "no-store" } });
+  }
+  return viaReferer;
+}
+
 async function handle(req: Request, ctx: Ctx, withBody: boolean): Promise<Response> {
   const { label, path } = await ctx.params;
   const host = requestHost(req.headers);
-  const hostLabel = siteLabelFromHost(host);
-  // 허브 호스트(또는 다른 사이트 호스트)로 직접 들어온 요청은 막는다.
-  if (!host || !hostLabel || hostLabel !== decodeURIComponentSafe(label)) return plainNotFound();
-
-  const pathname = req.headers.get(SITE_PATH_HEADER) ?? `/${(path ?? []).map(encodeURIComponent).join("/")}`;
-  const resolved = await resolveSiteRequest(hostLabel, pathname);
+  if (!host) return plainNotFound();
+  let resolved: SiteServeResult;
+  if (isSitesPathHost(host)) {
+    const r = await resolvePathMode(req, decodeURIComponentSafe(label));
+    if (r instanceof Response) return r;
+    resolved = r;
+  } else {
+    const hostLabel = siteLabelFromHost(host);
+    // 허브 호스트(또는 다른 사이트 호스트)로 직접 들어온 요청은 막는다.
+    if (!hostLabel || hostLabel !== decodeURIComponentSafe(label)) return plainNotFound();
+    const pathname = req.headers.get(SITE_PATH_HEADER) ?? `/${(path ?? []).map(encodeURIComponent).join("/")}`;
+    resolved = await resolveSiteRequest(hostLabel, pathname);
+  }
 
   if (resolved.kind === "pending") {
     return infoPage(

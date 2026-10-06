@@ -1,9 +1,10 @@
 import "server-only";
 import { headers } from "next/headers";
+import { sitesPathOrigin } from "../app/site-serve/host";
 
 // 허브 주소와 사이트 주소 계산(F-51, F-55, F-57).
 // 사이트는 허브와 다른 origin에서 서빙한다. 로컬은 http://<slug>.localhost:<port>,
-// 운영은 SITES_DOMAIN 환경변수(예: dandi-sites.kr)를 쓴다.
+// 운영은 SITES_DOMAIN 환경변수(예: dandi-sites.kr) 또는 경로형 SITES_ORIGIN(예: https://dandi-sites.vercel.app)을 쓴다.
 //
 // 운영에서는 HUB_ORIGIN을 반드시 설정한다. 설정하지 않으면 요청의 Host로 허브 주소를 만드는데,
 // X-Forwarded-Host/Proto/For는 믿을 수 있는 리버스 프록시 뒤(TRUST_PROXY=1)에서만 쓴다.
@@ -65,11 +66,13 @@ export function clientIp(h: HeaderGetter): string {
 }
 
 /**
- * 사이트 주소. 허브 origin에서 호스트 앞에 사이트 이름을 붙인다.
+ * 사이트 주소(끝 슬래시 없음). 허브 origin에서 호스트 앞에 사이트 이름을 붙인다.
  * 예) hub "http://localhost:3000", label "quiz" → "http://quiz.localhost:3000"
- * SITES_DOMAIN이 있으면 "https://quiz.<SITES_DOMAIN>".
+ * SITES_ORIGIN이 있으면 경로형 "https://dandi-sites.vercel.app/quiz", SITES_DOMAIN이 있으면 "https://quiz.<SITES_DOMAIN>".
  */
 export function siteOrigin(hub: string, label: string): string {
+  const pathOrigin = sitesPathOrigin();
+  if (pathOrigin) return `${pathOrigin}/${label}`;
   if (process.env.SITES_DOMAIN) return `https://${label}.${process.env.SITES_DOMAIN}`;
   const u = new URL(hub);
   return `${u.protocol}//${label}.${u.host}`;

@@ -1,11 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { SITE_PATH_HEADER, requestHost, siteLabelFromHost } from "./app/site-serve/host";
+import {
+  SITE_FULL_PATH_HEADER,
+  SITE_INTERNAL_HEADERS,
+  SITE_PATH_HEADER,
+  SITE_REFERER_LABEL_HEADER,
+  isSitesPathHost,
+  requestHost,
+  siteLabelFromHost,
+  siteLabelFromPath,
+  siteLabelFromReferer,
+} from "./app/site-serve/host";
 import { docsMarkdownRewrite } from "./lib/docs/paths";
 
 // 1) 허브 정적 호스팅(F-51): Host가 <label>.localhost[:port] 또는 <label>.<SITES_DOMAIN>이면
 //    /site-serve/<label>/<경로>로 rewrite한다. 사이트는 허브와 다른 origin이라 허브 세션 쿠키가 가지 않는다.
 //    사이트 요청에는 쿠키를 발급하지 않고, 원래 경로는 요청 헤더로 넘긴다.
+//    경로형(SITES_ORIGIN 호스트)은 /<label>/<경로>를 같은 라우트로 보낸다. 첫 조각이 label이 아니면 "_"로 보내고
+//    Referer의 label을 함께 넘겨, 라우트가 /assets/... 같은 절대 경로 요청을 그 사이트의 파일로 찾게 한다.
 // 2) F-01 익명 인증(허브 호스트만): 처음 방문한 사람에게 로그인 없이 세션 쿠키를 발급한다.
 //    같은 요청의 서버 컴포넌트도 새 세션을 볼 수 있도록 요청 쿠키에도 넣는다.
 const SESSION_COOKIE = "dd_sid";
@@ -18,15 +30,36 @@ const SESSION_COOKIE = "dd_sid";
 const HUB_SKIP =
   /^\/(?:(?:api|_next\/static|_next\/image|examples|downloads|docs\/md|mcp|oauth|\.well-known|pdfjs|cmaps)(?:\/|$)|(?:favicon\.ico|llms\.txt|llms-full\.txt|dandi-[^/]+\.tgz|dandi-latest\.json)$)/;
 
+function siteRequestHeaders(request: NextRequest): Headers {
+  const headers = new Headers(request.headers);
+  for (const name of SITE_INTERNAL_HEADERS) headers.delete(name);
+  headers.delete("cookie"); // 사이트 라우트는 쿠키를 쓰지 않는다.
+  return headers;
+}
+
 export function proxy(request: NextRequest) {
-  const label = siteLabelFromHost(requestHost(request.headers));
+  const host = requestHost(request.headers);
+  if (host && isSitesPathHost(host)) {
+    const original = request.nextUrl.pathname;
+    const fromPath = siteLabelFromPath(original);
+    const rest = fromPath?.rest ?? original;
+    const url = request.nextUrl.clone();
+    url.pathname = `/site-serve/${fromPath ? encodeURIComponent(fromPath.label) : "_"}${rest === "/" ? "" : rest}`;
+    const headers = siteRequestHeaders(request);
+    headers.set(SITE_PATH_HEADER, rest);
+    headers.set(SITE_FULL_PATH_HEADER, original);
+    const refLabel = siteLabelFromReferer(request.headers.get("referer"), host);
+    if (refLabel) headers.set(SITE_REFERER_LABEL_HEADER, refLabel);
+    return NextResponse.rewrite(url, { request: { headers } });
+  }
+
+  const label = siteLabelFromHost(host);
   if (label !== null) {
     const original = request.nextUrl.pathname;
     const url = request.nextUrl.clone();
     url.pathname = `/site-serve/${encodeURIComponent(label)}${original === "/" ? "" : original}`;
-    const headers = new Headers(request.headers);
+    const headers = siteRequestHeaders(request);
     headers.set(SITE_PATH_HEADER, original);
-    headers.delete("cookie"); // 사이트 라우트는 쿠키를 쓰지 않는다.
     return NextResponse.rewrite(url, { request: { headers } });
   }
 

@@ -7,6 +7,7 @@ import type { Readable } from "node:stream";
 import zlib from "node:zlib";
 import { isLevelOrAll, isSchoolLevel } from "./constants";
 import { mutate, newId, nowIso, readDb } from "./db";
+import { siteLabelFromPath, sitesPathOrigin } from "../app/site-serve/host";
 import { readStoredHead, saveUpload } from "./files";
 import { maskFields, maskPII } from "./pii";
 import { displayName, ensureUser, isTeacher, writeAudit } from "./session";
@@ -283,9 +284,12 @@ const SITE_LABEL_RE = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
 
 /**
  * 이 허브가 호스팅하는 사이트 주소인가(F-51). origin.ts siteOrigin과 같은 규칙:
- * SITES_DOMAIN이 있으면 https://<label>.<SITES_DOMAIN>, 없으면 허브 호스트 앞에 label을 붙인 주소.
+ * SITES_ORIGIN이 있으면 <SITES_ORIGIN>/<label>/..., SITES_DOMAIN이 있으면 https://<label>.<SITES_DOMAIN>,
+ * 없으면 허브 호스트 앞에 label을 붙인 주소.
  */
 export function isHubSiteUrl(u: URL, hub: string): boolean {
+  const pathOrigin = sitesPathOrigin();
+  if (pathOrigin) return u.origin === pathOrigin && siteLabelFromPath(u.pathname) !== null;
   const host = u.hostname.toLowerCase();
   const sitesDomain = process.env.SITES_DOMAIN?.trim().toLowerCase().replace(/^\.+|\.+$/g, "");
   if (sitesDomain) {

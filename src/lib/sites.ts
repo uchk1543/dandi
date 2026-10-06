@@ -172,6 +172,8 @@ const RESERVED_SLUGS = new Set([
   "auth", "login", "logout", "oauth", "sso", "account", "dandi", "dandi", "site", "sites", "preview",
   "status", "cli", "device", "connect", "studio", "skills", "books", "files", "localhost", "root", "system",
   "support", "help", "security", "abuse", "postmaster", "webmaster", "hostmaster", "ns1", "ns2", "site-serve",
+  // 경로형 주소(SITES_ORIGIN)에서 사이트가 절대 경로로 부르는 흔한 폴더 이름과 겹치지 않게
+  "images", "img", "css", "fonts", "media", "icons", "scripts", "build", "dist", "public",
 ]);
 
 /** slug 검사. 통과하면 null, 아니면 한국어 오류 문장. 길이를 먼저 본다. */
@@ -1312,16 +1314,19 @@ async function resolveLabel(label: string): Promise<LabelResolution> {
  * 디렉터리 요청은 index.html, 확장자 없는 경로는 <경로>.html도 찾는다. 없으면 사이트의 404.html.
  * 허브가 끝 슬래시를 떼는 리다이렉트를 하므로(/docs/ → /docs), 하위 폴더 index.html을 슬래시 없이 열면
  * 상대 경로가 맞도록 baseHref(<base href>)를 함께 돌려준다.
+ * prefix는 경로형 주소(https://<사이트 호스트>/<label>/)의 "/<label>"이다. 이때는 첫 화면·404 화면에도
+ * baseHref를 넣어, 주소 끝 슬래시가 빠져도 상대 경로가 사이트 안을 가리키게 한다.
  */
-export async function resolveSiteRequest(label: string, pathname: string): Promise<SiteServeResult> {
+export async function resolveSiteRequest(label: string, pathname: string, prefix = ""): Promise<SiteServeResult> {
   const found = await resolveLabel(label);
   if (found.kind !== "deploy") return found;
   const { files, preview } = found;
   const decoded = decodeSitePath(pathname);
+  const rootBase = prefix ? `${prefix}/` : null;
   const notFound = (): SiteServeResult => {
     const page = files.get("404.html");
     return page
-      ? { kind: "file", file: page, status: 404, preview, baseHref: null }
+      ? { kind: "file", file: page, status: 404, preview, baseHref: rootBase }
       : { kind: "not_found", preview, reason: "no_file" };
   };
   if (!decoded) return notFound();
@@ -1330,8 +1335,8 @@ export async function resolveSiteRequest(label: string, pathname: string): Promi
     const f = files.get(p);
     return f ? { kind: "file", file: f, status: 200, preview, baseHref } : null;
   };
-  if (rel === "") return hit("index.html") ?? notFound();
+  if (rel === "") return hit("index.html", rootBase) ?? notFound();
   if (decoded.trailingSlash) return hit(`${rel}/index.html`) ?? notFound();
-  const base = `/${decoded.segments.map(encodeURIComponent).join("/")}/`;
+  const base = `${prefix}/${decoded.segments.map(encodeURIComponent).join("/")}/`;
   return hit(rel) ?? hit(`${rel}.html`) ?? hit(`${rel}/index.html`, base) ?? notFound();
 }

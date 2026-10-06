@@ -1,9 +1,18 @@
 // 사이트 호스트 판별(F-51). proxy.ts와 사이트 서빙 라우트가 함께 쓰므로 Node 전용 API나 DB를 쓰지 않는다.
-// 사이트는 허브와 다른 origin에서 서빙한다: 로컬 http://<label>.localhost:<port>, 운영 https://<label>.<SITES_DOMAIN>.
+// 사이트는 허브와 다른 origin에서 서빙한다.
+// - 하위 도메인형: 로컬 http://<label>.localhost:<port>, 운영 https://<label>.<SITES_DOMAIN>
+// - 경로형(SITES_ORIGIN): https://<사이트 전용 호스트>/<label>/. 와일드카드 인증서를 받을 수 없는 곳(예: *.vercel.app)용.
+//   허브와는 origin이 달라 허브 세션이 분리되지만, 사이트끼리는 같은 origin이다(localStorage 등을 함께 쓴다).
 // label은 공개 주소면 slug, 미리보기면 "<slug>--<token>"이다.
 
-/** proxy가 rewrite할 때 원래 요청 경로(퍼센트 인코딩 그대로)를 담아 보내는 요청 헤더 */
+/** proxy가 rewrite할 때 원래 요청 경로(퍼센트 인코딩 그대로)를 담아 보내는 요청 헤더. 경로형이면 label 뒤의 경로. */
 export const SITE_PATH_HEADER = "x-dandi-site-path";
+/** 경로형: label을 포함한 원래 요청 경로 */
+export const SITE_FULL_PATH_HEADER = "x-dandi-site-full-path";
+/** 경로형: Referer가 가리키는 사이트 label. 사이트가 /assets/... 같은 절대 경로로 파일을 부를 때 쓴다. */
+export const SITE_REFERER_LABEL_HEADER = "x-dandi-site-referer-label";
+/** proxy가 직접 채우는 내부 헤더. 클라이언트가 보낸 값은 지운다. */
+export const SITE_INTERNAL_HEADERS = [SITE_PATH_HEADER, SITE_FULL_PATH_HEADER, SITE_REFERER_LABEL_HEADER];
 
 /**
  * 믿을 수 있는 역방향 프록시 뒤인가(TRUST_PROXY=1). origin.ts의 TRUST_PROXY와 같은 규칙이다.
@@ -50,6 +59,52 @@ function configuredHubHostname(): string | null {
 function sitesDomain(): string | null {
   const d = process.env.SITES_DOMAIN?.trim().toLowerCase().replace(/^\.+|\.+$/g, "");
   return d || null;
+}
+
+/** 경로형 사이트 origin(SITES_ORIGIN). 형식이 틀리거나(경로 포함 등) 없으면 null. */
+function sitesOriginUrl(): URL | null {
+  const raw = process.env.SITES_ORIGIN?.trim();
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    if ((u.protocol !== "https:" && u.protocol !== "http:") || (u.pathname !== "/" && u.pathname !== "")) return null;
+    return u;
+  } catch {
+    return null;
+  }
+}
+
+/** 경로형 사이트 origin(예: "https://dandi-sites.vercel.app"). 쓰지 않으면 null. */
+export function sitesPathOrigin(): string | null {
+  return sitesOriginUrl()?.origin ?? null;
+}
+
+/** 요청 호스트가 경로형 사이트 호스트인가. */
+export function isSitesPathHost(host: string | null): boolean {
+  const u = sitesOriginUrl();
+  return Boolean(u && host && host.toLowerCase() === u.host.toLowerCase());
+}
+
+// sites.ts의 PREVIEW_LABEL_RE·LIVE_LABEL_RE를 합친 형식
+const LABEL_SEGMENT_RE = /^[a-z0-9-]{3,30}(?:--[a-z0-9]{10})?$/;
+
+/** 경로형: 첫 경로 조각이 label 형식이면 label과 나머지 경로(퍼센트 인코딩 그대로, "/"로 시작)를 돌려준다. */
+export function siteLabelFromPath(pathname: string): { label: string; rest: string } | null {
+  const m = /^\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (!m || !LABEL_SEGMENT_RE.test(m[1])) return null;
+  return { label: m[1], rest: m[2] ?? "/" };
+}
+
+/** 경로형: 같은 사이트 호스트의 Referer이면 그 경로의 label. */
+export function siteLabelFromReferer(referer: string | null, host: string): string | null {
+  if (!referer) return null;
+  try {
+    const r = new URL(referer);
+    if (r.host.toLowerCase() !== host.toLowerCase()) return null;
+    return siteLabelFromPath(r.pathname)?.label ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**

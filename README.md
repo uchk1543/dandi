@@ -65,6 +65,7 @@ MCP로 연결하려면 `/connect`의 한 줄을 씁니다. 예) `claude mcp add 
 |---|---|
 | `HUB_ORIGIN` | 허브 주소(예: `https://dandi.example.kr`). OAuth 발급자·설치 명령·런북의 주소가 됩니다. **반드시 설정**하십시오. |
 | `SITES_DOMAIN` | 교사 사이트 전용 도메인(예: `dandi-sites.kr`, 와일드카드 DNS·TLS 필요). 사이트는 `https://<이름>.<도메인>`에서 서빙되어 허브 세션과 분리됩니다. |
+| `SITES_ORIGIN` | 와일드카드 도메인 없이 쓰는 경로형 사이트 주소(예: `https://dandi-sites.vercel.app`, 같은 Vercel 프로젝트에 붙인 도메인). 사이트는 `<SITES_ORIGIN>/<이름>/`에서 서빙됩니다. 허브와는 분리되지만 사이트끼리는 같은 origin이라 localStorage 등을 함께 씁니다. `/assets/...` 같은 절대 경로는 Referer로 사이트를 찾아 줍니다. 있으면 `SITES_DOMAIN`보다 먼저 씁니다. `HUB_ORIGIN`도 함께 설정하십시오(허브 iframe 허용). 빌드할 때 읽으므로 바꾸면 다시 배포합니다. |
 | `TRUST_PROXY=1` | 믿을 수 있는 리버스 프록시 뒤에서만 켭니다. 켜면 `X-Forwarded-Host/Proto/For`를 사용합니다(가장 오른쪽 IP). |
 | `DANDI_OAUTH_SECRET` | 서버를 여러 대로 돌려 `data/`를 공유하지 않을 때 32자 이상으로 설정합니다(갱신 토큰 재전송 허용용). |
 | `DANDI_DATA_DIR` | 로컬 저장소 위치. 기본은 `data/`. |
