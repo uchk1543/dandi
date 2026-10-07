@@ -12,7 +12,8 @@ import { readDb } from "@/lib/db";
 import type { LevelOrAll, SchoolLevel } from "@/lib/types";
 
 // 메인 허브 대시보드(PRD 9장, 화면 구성은 design.md 8장).
-// 히어로 → 바로가기(도크/CTA 타일) → 학교급 카드 → 인기 미니앱 → 커뮤니티·자료실 패널.
+// 히어로 → 두 갈래(수업에 바로 쓰기 / 내 아이디어 개발하기) → 학교급 카드 → 인기 미니앱 → 커뮤니티·자료실 패널.
+// 첫 화면에서 "만든 앱을 그냥 쓰면 된다"와 "나도 도움 받아 만들 수 있다" 두 가지가 바로 읽히게 한다.
 // 전역 학교급 필터(?level=)가 인기 미니앱·커뮤니티·자료실에 모두 적용된다. 로그인 없이 사용할 수 있다.
 
 const POPULAR_APPS = 6;
@@ -76,8 +77,10 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     .slice(0, LATEST_FILES);
 
+  const publicApps = db.apps.filter(isPublicApp);
+  const publicAppCount = publicApps.length;
   const levelCounts = new Map<SchoolLevel, number>();
-  for (const a of db.apps.filter(isPublicApp))
+  for (const a of publicApps)
     for (const l of a.schoolLevels) levelCounts.set(l, (levelCounts.get(l) ?? 0) + 1);
 
   return (
@@ -87,67 +90,84 @@ export default async function HubPage({ searchParams }: { searchParams: Promise<
           <div className={styles.heroText}>
             <p className={styles.heroEyebrow}>교사가 만들고, 교사가 나누는 미니앱 허브</p>
             <h1 id="hub-title">
-              AI로 만든 수업 앱,
+              <span className={styles.accent}>Dandi</span>에서 앱은 바로 쓰고,
               <br />
-              <span className={styles.accent}>Dandi</span>에서 바로 나눠요
+              아이디어는 함께 만들어요
             </h1>
             <p className={styles.heroLead}>
-              로그인 없이 미니앱을 바로 실행하고 자료를 내려받을 수 있습니다.
-              <br className={styles.brDesktop} /> 앱 등록과 글쓰기는 <Link href="/login">교사 로그인</Link> 후 사용할 수
-              있습니다.
+              선생님들이 만든 수업 앱을 로그인 없이 그대로 씁니다.
+              <br className={styles.brDesktop} /> 직접 만들고 싶다면 동료 교사와 AI 도구의 도움을 받아 시작할 수 있습니다.
             </p>
-            <div className={styles.heroActions}>
-              <Link href={withLevel("/apps", level)} className="button dark lg">
-                미니앱 둘러보기
-              </Link>
-              <Link href="/connect" className="button lg">
-                AI로 내 사이트 올리기
-              </Link>
-            </div>
           </div>
           <HeroArt className={styles.heroArt} />
         </div>
-        <nav className={styles.dock} aria-label="바로가기">
-          <Link href="/connect" className={styles.dockItem}>
-            <span className={styles.dockTitle}>
-              AI로
-              <br />
-              올리기
-            </span>
-            <UploadArt className={styles.dockImg} />
-            <span className={styles.dockLabel}>시작</span>
-          </Link>
-          <span className={styles.dockDivider} aria-hidden="true" />
-          <Link href="/books" className={`${styles.dockItem} ${styles.dark}`}>
-            <span className={styles.dockTitle}>
-              전자책
-              <br />
-              서가
-            </span>
-            <BookArt className={styles.dockImg} />
-            <span className={styles.dockLabel}>읽기</span>
-          </Link>
-        </nav>
       </section>
 
-      <nav className={styles.ctaTiles} aria-label="바로가기">
-        <Link href="/connect" className={styles.ctaTile}>
-          <UploadArt />
-          <span className={styles.ctaTitle}>
-            AI로 내 사이트 올리기
-            <small>링크 한 줄로 배포까지</small>
-          </span>
-          <span className={styles.ctaPill}>시작</span>
-        </Link>
-        <Link href="/books" className={`${styles.ctaTile} ${styles.dark}`}>
-          <BookArt />
-          <span className={styles.ctaTitle}>
-            전자책 서가
-            <small>로그인 없이 바로 읽기</small>
-          </span>
-          <span className={styles.ctaPill}>읽기</span>
-        </Link>
-      </nav>
+      <div className={styles.paths}>
+        <section className={`${styles.path} ${styles.pathUse}`} aria-labelledby="hub-use">
+          <div className={styles.pathHead}>
+            <span className={styles.pathTag}>수업하기</span>
+            <BookArt className={styles.pathArt} />
+          </div>
+          <h2 id="hub-use">선생님들이 만든 앱, 그냥 쓰세요</h2>
+          <p className={styles.pathLead}>설치도 로그인도 필요 없습니다. 수업에 맞는 앱과 자료를 골라 바로 씁니다.</p>
+          <ul className={styles.pathLinks}>
+            <li>
+              <Link href={withLevel("/apps", level)}>
+                <strong>미니앱</strong>
+                <span>{publicAppCount.toLocaleString("ko-KR")}개 바로 실행</span>
+              </Link>
+            </li>
+            <li>
+              <Link href="/books">
+                <strong>서가</strong>
+                <span>웹북 · PDF 읽기</span>
+              </Link>
+            </li>
+            <li>
+              <Link href={withLevel("/files", level)}>
+                <strong>자료실</strong>
+                <span>수업 자료 받기</span>
+              </Link>
+            </li>
+          </ul>
+          <Link href={withLevel("/apps", level)} className={`button dark lg ${styles.pathCta}`}>
+            미니앱 바로 쓰기 →
+          </Link>
+        </section>
+
+        <section className={`${styles.path} ${styles.pathMake}`} aria-labelledby="hub-make">
+          <div className={styles.pathHead}>
+            <span className={styles.pathTag}>개발하기</span>
+            <UploadArt className={styles.pathArt} />
+          </div>
+          <h2 id="hub-make">내 아이디어, 도움 받으며 직접 만들어요</h2>
+          <p className={styles.pathLead}>코딩을 몰라도 괜찮습니다. 아이디어를 나누고, AI와 만들고, 올려서 함께 씁니다.</p>
+          <ol className={styles.pathLinks}>
+            <li>
+              <Link href="/community">
+                <strong>① 아이디어 나누기</strong>
+                <span>커뮤니티에서 의견 듣기</span>
+              </Link>
+            </li>
+            <li>
+              <Link href="/templates">
+                <strong>② AI와 만들기</strong>
+                <span>템플릿 · 스킬로 시작</span>
+              </Link>
+            </li>
+            <li>
+              <Link href="/connect">
+                <strong>③ 올리고 나누기</strong>
+                <span>AI로 내 사이트 올리기</span>
+              </Link>
+            </li>
+          </ol>
+          <Link href="/community" className={`button primary lg ${styles.pathCta}`}>
+            내 아이디어 시작하기 →
+          </Link>
+        </section>
+      </div>
 
       <section className={styles.section} aria-labelledby="hub-levels">
         <div className={styles.sectionHead}>

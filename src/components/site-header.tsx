@@ -22,7 +22,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "개발하기",
     accent: "var(--brand)",
     items: [
-      { href: "/community", label: "커뮤니티", desc: "아이디어 발표 · 의견 나누기 · 팀 모집" },
+      { href: "/community", label: "커뮤니티", desc: "아이디어를 올리고 의견 · 질문 나누기" },
       { href: "/templates", label: "템플릿", desc: "예시 사이트와 AI 작업 지시서로 시작" },
       { href: "/skills", label: "스킬", desc: "AI 코딩 도구에 설치하는 작업 설명서" },
       { href: "/ai", label: "AI 모델", desc: "프로젝트 API 키와 사용 가능한 모델" },
