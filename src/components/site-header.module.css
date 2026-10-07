@@ -45,20 +45,30 @@
 }
 
 .gnb { display: none; height: 100%; }
-.gnb a {
+.gnbGroup { position: relative; height: 100%; }
+/* 묶음 버튼과 단독 링크(문서)는 같은 모양. 전역 button 스타일을 지운다. */
+.gnbLink {
   position: relative;
   display: flex;
   align-items: center;
+  gap: 4px;
   height: 100%;
-  padding-inline: clamp(10px, 1.15vw, 22px);
+  min-height: 0;
+  margin: 0;
+  padding: 0 clamp(10px, 1.15vw, 22px);
+  border: 0;
+  border-radius: 0;
+  background: none;
+  font: inherit;
   font-size: 15px;
   font-weight: 800;
   color: var(--text-secondary);
   text-decoration: none;
   white-space: nowrap;
+  cursor: pointer;
   transition: color 0.18s;
 }
-.gnb a::after {
+.gnbLink::after {
   content: "";
   position: absolute;
   left: clamp(10px, 1.15vw, 22px);
@@ -70,8 +80,45 @@
   opacity: 0;
   transition: opacity 0.18s;
 }
-.gnb a:hover, .gnb a[aria-current="page"] { color: var(--accent, var(--brand)); }
-.gnb a:hover::after, .gnb a[aria-current="page"]::after { opacity: 1; }
+.gnbLink:hover,
+.gnbLink[aria-expanded="true"],
+.gnbLink[aria-current="page"],
+.gnbLink[data-current] { background: none; color: var(--accent, var(--brand)); }
+.gnbLink:hover::after,
+.gnbLink[aria-expanded="true"]::after,
+.gnbLink[aria-current="page"]::after,
+.gnbLink[data-current]::after { opacity: 1; }
+.gnbChevron { width: 12px; height: 12px; flex: none; transition: transform 0.18s; }
+.gnbLink[aria-expanded="true"] .gnbChevron { transform: rotate(180deg); }
+
+/* 드롭다운: 헤더 바로 아래, 항목마다 한 줄 설명 */
+.gnbPanel {
+  position: absolute;
+  top: 100%;
+  left: clamp(0px, 0.6vw, 10px);
+  z-index: 1;
+  min-width: 300px;
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 16px 32px rgba(23, 26, 28, 0.1);
+}
+.gnbPanel[hidden] { display: none; }
+.gnbPanel a {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.gnbPanel strong { font-size: 15px; font-weight: 800; }
+.gnbPanel span { font-size: 13px; font-weight: 500; color: var(--text-tertiary); white-space: nowrap; }
+.gnbPanel a:hover { background: var(--bg-subtle); color: var(--accent, var(--brand)); }
+.gnbPanel a[aria-current="page"] { color: var(--accent, var(--brand)); }
 
 .headerActions { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .headerActions .headerCta { display: none; }
@@ -146,6 +193,8 @@
   max-height: calc(100vh - var(--header-h));
   overflow-y: auto;
 }
+.mnavGroup + .mnavGroup { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--divider-soft); }
+.mnavGroup h2 { margin: 4px 8px 2px; font-size: 13px; font-weight: 800; color: var(--accent, var(--text-tertiary)); }
 .mnavPanel ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; }
 .mnavPanel a {
   display: block;

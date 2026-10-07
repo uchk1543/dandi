@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MORE_NAV, PRIMARY_NAV } from "./site-header";
+import { NAV_GROUPS } from "./site-header";
 import styles from "./site-footer.module.css";
 
 // 사이트 푸터(design.md 7.9). 프로토타입임을 밝히고 전체 화면 바로가기를 둔다.
@@ -21,13 +21,22 @@ export function SiteFooter() {
           <p className={styles.footerCopy}>이 화면은 기능 확인용 시안입니다. 공식 서비스가 아닙니다.</p>
         </div>
         <nav className={styles.footerLinks} aria-label="바로가기">
-          {[...PRIMARY_NAV, ...MORE_NAV].map((n) => (
-            <Link key={n.href} href={n.href}>
-              {n.label}
-            </Link>
+          {NAV_GROUPS.map((g) => (
+            <div key={g.label}>
+              <h2>{g.items.length > 1 ? g.label : "도움말"}</h2>
+              {g.items.map((n) => (
+                <Link key={n.href} href={n.href}>
+                  {n.label}
+                </Link>
+              ))}
+              {g.items.length === 1 && (
+                <>
+                  <Link href="/admin">관리자</Link>
+                  <a href="/llms.txt">llms.txt</a>
+                </>
+              )}
+            </div>
           ))}
-          <Link href="/connect">AI로 연결</Link>
-          <a href="/llms.txt">llms.txt</a>
         </nav>
       </div>
     </footer>
